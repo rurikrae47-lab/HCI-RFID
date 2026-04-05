@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - RFID Student Attendance</title>
+    <link rel="stylesheet" href="onyx.css">
+</head>
+<body>
+    <img src=""
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📋 RFID Student Attendance Dashboard</h1>
+            <div class="user-info">
+                <div class="avatar">MRS</div>
+                <div>
+                    <div style="font-weight: 600; color: #4a5568;">Mrs. Marjorie Rojas</div>
+                    <div style="font-size: 0.9em; color: #718096;">Human Computer and Interaction (HCI)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" data-value="96%">96%</div>
+                <div class="stat-label">Overall Attendance</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">30</div>
+                <div class="stat-label">Total Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label">Absent Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">26</div>
+                <div class="stat-label">Present Today</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="period-tabs">
+                <button class="tab-btn active" data-period="week">📊 This Week</button>
+                <button class="tab-btn" data-period="month">📅 This Month</button>
+                <button class="tab-btn" data-period="custom">📆 Custom Range</button>
+            </div>
+            <div class="date-range">
+                <div class="date-group">
+                    <label>From</label>
+                    <input type="date" class="date-input" value="2024-01-15">
+                </div>
+                <div class="date-group">
+                    <label>To</label>
+                    <input type="date" class="date-input" value="2024-01-22">
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Attendance Table -->
+            <div class="attendance-table">
+                <div class="table-header">
+                    <div class="table-title">
+                        👥 Student Attendance Records
+                        <span style="font-size: 0.9em; opacity: 0.9;">(Weekly View)</span>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Mon</th>
+                            <th>Tue</th>
+                            <th>Wed</th>
+                            <th>Thu</th>
+                            <th>Fri</th>
+                            <th>Attendance %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025-02907</td>
+                            <td>ABAH, NADZMI GAPUR.</td>
+                            <td><span class="status present">Present</span></td>
+                            <td><span class="status present">Present</span></td>
+                            <td><span class="status present">Present</span></td>
+                            <td><span class="status late">Late</span></td>
+                            <td><span class="status present">Present</span></td>
+                            <td><strong>95%</strong></td>
+                            <td><span class="status present">✅ Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>2025-02697</td>
+                            <td>AGEAS, ROVHIC CHAWEE ALESNA.</td>
+                            <td><span class="status present">Present</span></td>
+                            <td><span class="status absent">Absent</span></td>
+                            <td><span class="status present">Present</span></td>
+                            <td><span class="status present">Present</span></td>
+                            <td><span class="status present">Present</span></td>
+                            <td><strong>80%</strong></td>
+                            <td><span class="status absent">⚠️ Alert</span></td>
+                        </tr>
+                        <tr>
+                            <td>2025-01218</td>
+                            <td>AHAMAD, AINEE HANA TAN.</td>
+                            <td><span class="status present">Present</span></td>
