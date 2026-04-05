@@ -1,0 +1,229 @@
+/* =========================================
+   1. CORE VARIABLES & BASE SETUP
+   ========================================= */
+:root {
+    --crimson: #9e1b32;      /* WMSU Red */
+    --crimson-dark: #7a1527;
+    --dark-bg: #0a0a0a;
+    --card-bg: #141414;
+    --border-color: #222;
+    --text-main: #e0e0e0;
+    --text-dim: #888;
+    
+    /* Status Colors */
+    --green: #2ecc71;
+    --yellow: #f1c40f;
+    --white: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.logic-gate { display: none; } /* Hides all logic radio/checkboxes */
+
+/* =========================================
+   2. SIDEBAR & NAVIGATION (Slide-out)
+   ========================================= */
+.sidebar {
+    width: 280px;
+    background: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    height: 100vh;
+    position: fixed;
+    left: -280px; /* Hidden off-screen */
+    top: 0;
+    z-index: 2000;
+    transition: 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Sidebar Reveal Logic */
+#nav-toggle:checked ~ .sidebar { left: 0; }
+
+.sidebar-content { padding: 30px 20px; }
+
+.sidebar h2 { 
+    color: var(--crimson); 
+    font-size: 1.4rem; 
+    margin-bottom: 25px; 
+    border-bottom: 2px solid var(--crimson); 
+    padding-bottom: 10px; 
+}
+
+.nav-btn {
+    display: block;
+    padding: 12px 15px;
+    background: #1a1a1a;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.nav-btn:hover { background: var(--crimson); }
+
+/* Menu Icon Button */
+.menu-trigger {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: var(--crimson);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* Dark Blur Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 1500;
+    display: none;
+    backdrop-filter: blur(5px);
+}
+#nav-toggle:checked ~ .overlay { display: block; }
+
+/* =========================================
+   3. MAIN CONTENT & PAGE SWITCHING
+   ========================================= */
+.main-container {
+    padding: 80px 40px 40px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.content-page { display: none; }
+
+/* Page Switcher Logic */
+#page-terminal:checked ~ .main-container .terminal-view { display: block; }
+#page-admin:checked ~ .main-container .admin-view { display: block; }
+
+/* =========================================
+   4. TERMINAL SCANNER STYLES
+   ========================================= */
+.scanner-unit {
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 40px;
+}
+
+.visual-scanner {
+    width: 150px;
+    height: 150px;
+    border: 3px solid var(--crimson);
+    margin: 0 auto 20px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.laser-line {
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background: var(--crimson);
+    box-shadow: 0 0 15px var(--crimson);
+    animation: scan 2s infinite ease-in-out;
+}
+
+@keyframes scan {
+    0%, 100% { top: 10%; }
+    50% { top: 90%; }
+}
+
+input[type="text"] {
+    width: 100%;
+    max-width: 300px;
+    padding: 15px;
+    background: #000;
+    border: 1px solid #333;
+    color: white;
+    text-align: center;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+/* Student Record List */
+.attendance-records-reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: 0.6s ease;
+}
+
+.scanner-unit:focus-within ~ .attendance-records-reveal {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.scan-result {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 15px;
+    border-left: 5px solid var(--green);
+}
+
+.check-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: black;
+    background: var(--green);
+}
+
+/* =========================================
+   5. ADMIN DASHBOARD STYLES
+   ========================================= */
+.admin-tabs-nav {
+    display: flex;
+    gap: 15px;
+    margin: 25px 0;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+}
+
+.tab-item {
+    padding: 10px 20px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Tab Switching Logic */
+.admin-sub-content { display: none; }
+#tab-dashboard:checked ~ .main-container .dashboard-content { d
+
