@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - RFID System</title>
+    <link rel="stylesheet" href="onyx.css">
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>⚙️ Admin Panel</h1>
+        <div class="user-info">
+            <div class="avatar">ADM</div>
+            <div>
+                <div style="font-weight: 600;">System Administrator</div>
+                <div style="font-size: 0.9em;">RFID Control Panel</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <h2>➕ Add Student</h2>
+        <input type="text" id="studentId" placeholder="Student ID">
+        <input type="text" id="studentName" placeholder="Student Name">
+        <button class="filter-btn" onclick="addStudent()">Add Student</button>
+    </div>
+
+    <!-- Student List -->
+    <div class="attendance-table">
+        <div class="table-header">
+            <div class="table-title">📋 Student List</div>
+        </div>
+
+        <table id="studentTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dynamic -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Actions -->
+    <div class="controls">
+        <button class="filter-btn" onclick="clearAll()">🗑 Clear All Data</button>
+    </div>
+
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
