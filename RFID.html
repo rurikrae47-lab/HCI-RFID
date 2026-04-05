@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMSU RFID Attendance System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <input type="checkbox" id="nav-toggle" class="logic-gate">
+    <input type="radio" name="page-select" id="page-terminal" class="logic-gate" checked>
+    <input type="radio" name="page-select" id="page-admin" class="logic-gate">
+    <input type="radio" name="admin-tab" id="tab-dashboard" class="logic-gate" checked>
+    <input type="radio" name="admin-tab" id="tab-controls" class="logic-gate">
+
+    <label for="nav-toggle" class="menu-trigger">☰ Menu</label>
+    <label for="nav-toggle" class="overlay"></label>
+
+    <aside class="sidebar">
+        <div class="sidebar-content">
+            <div class="user-profile-section">
+                <div class="profile-info">
+                    <h2 class="sidebar-title"><span class="logo-text">WMSU - ACT AD 1B</span></h2>
+                </div>
+            </div>
+
+            <div class="info-group">
+                <p><strong>College:</strong> CCS</p>
+                <p><strong>Subject:</strong> HCI</p>
+                <p><strong>Room:</strong> LR2</p>
+            </div>
+
+            <nav class="navigation-menu">
+                <h3>NAVIGATION</h3>
+                <label for="page-terminal" class="nav-btn">
+                    <span class="nav-icon">📟</span> Terminal Scanner
+                </label>
+                <label for="page-admin" class="nav-btn">
+                    <span class="nav-icon">📊</span> Admin Dashboard
+                </label>
+            </nav>
+            
+            <div class="status-rules">
+                <h4>🕒 TIMING RULES</h4>
+                <ul>
+                    <li class="p-rule"><span>02:30</span> <strong>Present</strong></li>
+                    <li class="l-rule"><span>02:50</span> <strong>Late</strong></li>
+                    <li class="a-rule"><span>Miss</span> <strong>Absent</strong></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>© 2026 WMSU RFID System</p>
+            </div>
+
+            <label for="nav-toggle" class="close-sidebar">Close×</label>
+        </div>
+    </aside>
+
+    <div class="main-container">
+        <section class="content-page terminal-view">
+            <header>
+                <h1>RFID Scanning Terminal</h1>
+                <p>Status: <span class="p-rule">ACTIVE</span></p>
+            </header>
+
+            <form class="scanner-unit" action="" method="get">
+                <div class="visual-scanner">
+                    <div class="laser-line"></div>
+                    <p>TAP STUDENT ID</p>
+                </div>
+                <input type="text" name="id" placeholder="Scan here..." autofocus required>
+                <p class="sub-text">Place card near the reader to log attendance.</p>
+                <div class="tap-success-toast">Attendance Submitted Successfully!</div>
+            </form>
+
+
+            <div class="attendance-records-reveal">
+                <h3 style="margin-top: 30px; color: #555;">Live Attendance Log (Latest 5)</h3>
+                
+                <div class="scan-result success">
+                    <div class="check-circle">✓</div>
+                    <div class="result-details">
+                        <h2 class="student-name">ABAH, NADZMI GAPUR.</h2>
+                        <p class="student-id">ID: 2025-02907</p>
+                        <div class="badge-row"><span class="status-badge present">PRESENT   </span><span class="time-log">02:35 PM</span></div>
+                    </div>
+                </div>
+                <div class="scan-result late-card">
+                    <div class="check-circle yellow-bg">!</div>
+                    <div class="result-details">
+                        <h2 class="student-name yellow-text">AGEAS, ROVHIC CHAWEE ALESNA.</h2>
+                        <p class="student-id">ID: 2025-02697</p>
+                        <div class="badge-row"><span class="status-badge yellow-badge">LATE </span><span class="time-log">02:55 PM</span></div>
+                    </div>
+                </div>
+                <div class="scan-result success">
+                    <div class="check-circle">✓</div>
+                    <div class="result-details">
+                        <h2 class="student-name">AHAMAD, AINEE HANA TAN.</h2>
+                        <p class="student-id">ID: 2025-01218</p>
+                        <div class="badge-row"><span class="status-badge present">PRESENT   </span><span class="time-log">02:31 PM</span></div>
+                    </div>
+                </div>
+                <div class="scan-result absent-card">
+                    <div class="check-circle red-bg">X</div>
+                    <div class="result-details">
+                        <h2 class="student-name red-text">AKBARA, AMILHAN MANCERAS.</h2>
+                        <
