@@ -7,10 +7,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <input type="checkbox" id="nav-toggle" class="logic-gate">
     <input type="radio" name="page-select" id="page-terminal" class="logic-gate" checked>
-    <input type="radio" name="page-select" id="page-admin" class="logic-gate">
+    <input type="radio" name="page-select" id="page-report" class="logic-gate">
+    
     <input type="radio" name="admin-tab" id="tab-dashboard" class="logic-gate" checked>
     <input type="radio" name="admin-tab" id="tab-controls" class="logic-gate">
 
@@ -36,11 +36,16 @@
                 <label for="page-terminal" class="nav-btn">
                     <span class="nav-icon">📟</span> Terminal Scanner
                 </label>
-                <label for="page-admin" class="nav-btn">
-                    <span class="nav-icon">📊</span> Admin Dashboard
+                <!-- Removed direct links to other portals from the public terminal -->
+                <a href="Landing_page.html" class="nav-btn" style="text-decoration: none; display: flex; align-items: center; cursor: pointer; color: white;">
+                    <span class="nav-icon">🚪</span> Back to Portal
+                </a>
+
+                <label for="page-report" class="nav-btn">
+                    <span class="nav-icon">🐞</span> Report an Error
                 </label>
             </nav>
-            
+
             <div class="status-rules">
                 <h4>🕒 TIMING RULES</h4>
                 <ul>
@@ -50,15 +55,12 @@
                 </ul>
             </div>
 
-            <div class="sidebar-footer">
-                <p>© 2026 WMSU RFID System</p>
-            </div>
-
             <label for="nav-toggle" class="close-sidebar">Close×</label>
         </div>
     </aside>
 
     <div class="main-container">
+        
         <section class="content-page terminal-view">
             <header>
                 <h1>RFID Scanning Terminal</h1>
@@ -70,11 +72,25 @@
                     <div class="laser-line"></div>
                     <p>TAP STUDENT ID</p>
                 </div>
-                <input type="text" name="id" placeholder="Scan here..." autofocus required>
+                
+                <input type="text" name="id" placeholder="Scan here..." autofocus required pattern="[0-9]{4}-[0-9]{5}">
                 <p class="sub-text">Place card near the reader to log attendance.</p>
-                <div class="tap-success-toast">Attendance Submitted Successfully!</div>
-            </form>
+                
+                <div class="student-success-card">
+                    <div class="profile-pic-container">
+                        <img src="student1.png" alt="Student Photo">
+                    </div>
+                    <div class="student-info">
+                        <h3 class="success-label">ATTENDANCE LOGGED!</h3>
+                        <h2 class="student-name">ABAH, NADZMI GAPUR.</h2>
+                        <p class="student-id-display">ID: 2025-02907</p>
+                        <div class="status-badge-reveal">PRESENT</div>
+                    </div>
+                </div>
 
+                <div class="tap-success-toast success-msg">Attendance Submitted Successfully!</div>
+                <div class="tap-success-toast error-msg">Invalid ID: Not Registered in WMSU</div>
+            </form>
 
             <div class="attendance-records-reveal">
                 <h3 style="margin-top: 30px; color: #555;">Live Attendance Log (Latest 5)</h3>
@@ -84,9 +100,10 @@
                     <div class="result-details">
                         <h2 class="student-name">ABAH, NADZMI GAPUR.</h2>
                         <p class="student-id">ID: 2025-02907</p>
-                        <div class="badge-row"><span class="status-badge present">PRESENT   </span><span class="time-log">02:35 PM</span></div>
+                        <div class="badge-row"><span class="status-badge present">PRESENT</span><span class="time-log">02:35 PM</span></div>
                     </div>
                 </div>
+
                 <div class="scan-result late-card">
                     <div class="check-circle yellow-bg">!</div>
                     <div class="result-details">
@@ -95,16 +112,81 @@
                         <div class="badge-row"><span class="status-badge yellow-badge">LATE </span><span class="time-log">02:55 PM</span></div>
                     </div>
                 </div>
+
                 <div class="scan-result success">
                     <div class="check-circle">✓</div>
                     <div class="result-details">
                         <h2 class="student-name">AHAMAD, AINEE HANA TAN.</h2>
                         <p class="student-id">ID: 2025-01218</p>
-                        <div class="badge-row"><span class="status-badge present">PRESENT   </span><span class="time-log">02:31 PM</span></div>
+                        <div class="badge-row"><span class="status-badge present">PRESENT</span><span class="time-log">02:31 PM</span></div>
                     </div>
                 </div>
+
                 <div class="scan-result absent-card">
                     <div class="check-circle red-bg">X</div>
                     <div class="result-details">
                         <h2 class="student-name red-text">AKBARA, AMILHAN MANCERAS.</h2>
-                        <
+                        <p class="student-id">ID: 2025-02109</p>
+                        <div class="badge-row"><span class="status-badge red-badge">ABSENT</span><span class="time-log">No Log Found</span></div>
+                    </div>
+                </div>
+
+                <div class="scan-result success">
+                    <div class="check-circle">✓</div>
+                    <div class="result-details">
+                        <h2 class="student-name">ALAVERA, RHAINIEL GENESIS G.</h2>
+                        <p class="student-id">ID: 2025-01689</p>
+                        <div class="badge-row"><span class="status-badge present">PRESENT</span><span class="time-log">02:30 PM</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-page report-view">
+            <header class="dashboard-header">
+                <h1>Bug Reporting Portal</h1>
+                <p>Help us improve the WMSU RFID System</p>
+            </header>
+
+            <div class="report-card-container">
+                <input type="checkbox" id="trigger-notif" class="logic-gate">
+                <form class="report-form-card" onsubmit="document.getElementById('trigger-notif').checked = true; return false;">
+                    <div class="input-group" style="margin-bottom:15px;">
+                        <label style="display:block; color:#333; font-weight:bold;">Email</label>
+                        <input type="email" placeholder="Enter your Email" class="ui-input" required 
+                               style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom:15px;">
+                        <label style="display:block; color:#333; font-weight:bold;">Category</label>
+                        <select class="ui-input" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+                            <option>ID Not Scanning</option>
+                            <option>System Lag</option>
+                            <option>UI/Layout Error</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-bottom:15px;">
+                        <label style="display:block; color:#333; font-weight:bold;">Description</label>
+                        <textarea placeholder="Describe the bug..." class="ui-input ui-textarea" required
+                                  style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; height:80px;"></textarea>
+                    </div>
+                    <button type="submit" class="simulate-send-btn">Send Report</button>
+                </form>
+                <div class="sent-notification">
+                    <span class="icon">✔</span>
+                    <div class="notif-text"><strong>Report Sent!</strong><p>Thank you for your feedback.</p></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="admin-controls-fab">
+        <input type="checkbox" id="fab-trigger" class="logic-gate">
+        <label for="fab-trigger" class="fab-main">⚙️</label>
+        <div class="fab-options">
+            <button class="fab-btn" onclick="window.print()">📄 Generate PDF</button>
+            <button class="fab-btn lock-btn">🔒 Lock Session</button>
+        </div>
+    </div>
+
+</body>
+</html>
