@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMSU | RFID Attendance System</title>
+    <link rel="stylesheet" href="onyx.css">
+    <style>
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+        .hero h1 { font-size: 3.5rem; margin-bottom: 10px; font-weight: 800; }
+        .hero p { font-size: 1.2rem; margin-bottom: 40px; opacity: 0.9; }
+        
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .portal-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .portal-card:hover {
+            background: white;
+            color: #9e1b32;
+            transform: translateY(-10px);
+        }
+        .portal-icon { font-size: 3rem; margin-bottom: 20px; display: block; }
+        .portal-card h2 { font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <img src="wmsu_logo.png" alt="WMSU Logo" style="width: 120px; margin-bottom: 20px;">
+        <h1>RFID Attendance Monitoring System</h1>
+        <p>Smart RFID Monitoring System for Western Mindanao State University</p>
+
+        <div class="portal-grid" style="max-width: 1200px;">
+            <a href="RFID_Admin.html" class="portal-card">
+                <span class="portal-icon">⚙️</span>
+                <h2>Admin Portal</h2>
+                <p>System Management & Logs</p>
+            </a>
+            <a href="onyx.html" class="portal-card">
+                <span class="portal-icon">👩‍🏫</span>
+                <h2>Teacher Portal</h2>
+                <p>Class Records & Reports</p>
+            </a>
+            <a href="RFID_4.html" class="portal-card" style="border: 2px solid #9e1b32;">
+                <span class="portal-icon">📟</span>
+                <h2>Terminal Station</h2>
+                <p>Live Student Scanning</p>
+            </a>
+            <a href="student_dashboard.html" class="portal-card">
+                <span class="portal-icon">🆔</span>
+                <h2>Student Portal</h2>
+                <p>Check Personal Attendance</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
