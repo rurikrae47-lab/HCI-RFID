@@ -3,59 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - RFID System</title>
-    <link rel="stylesheet" href="onyx.css">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="rfid-style.css">
 </head>
 <body>
+    <div class="container">
+       <div class="header">
+    <div>
+        <h1 style="color: #9e1b32;">⚙️ System Administration</h1>
+        <p style="color: #718096;">WMSU RFID Infrastructure Management</p>
+        <a href="Landing_page.html" style="text-decoration: none; color: #9e1b32; font-size: 0.9em; font-weight: bold;">← Back to Portal</a>
+    </div>
+    <div class="user-info">
+        <div class="avatar">ADM</div>
+        <div>
+            <div style="font-weight: 600;">System Admin</div>
+            <div style="font-size: 0.8em; color: green;">● System Online</div>
+        </div>
+    </div>
+</div>
+        <div class="stats-grid">
+            <div class="stat-card" style="border-top-color: #2b6cb0;">
+                <div class="stat-number">1,240</div>
+                <div class="stat-label">Registered Tags</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #38a169;">
+                <div class="stat-number">85</div>
+                <div class="stat-label">Active Devices</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #e53e3e;">
+                <div class="stat-number">2</div>
+                <div class="stat-label">System Alerts</div>
+            </div>
+        </div>
 
-<div class="container">
-    <!-- Header -->
-    <div class="header">
-        <h1>⚙️ Admin Panel</h1>
-        <div class="user-info">
-            <div class="avatar">ADM</div>
-            <div>
-                <div style="font-weight: 600;">System Administrator</div>
-                <div style="font-size: 0.9em;">RFID Control Panel</div>
+        <div class="main-content">
+            <div class="attendance-table">
+                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="table-title">👤 User & Tag Management</span>
+                    <button class="filter-btn" style="margin: 0; padding: 10px 20px; font-size: 0.8em;">+ Add New User</button>
+                </div>
+                <table id="userTable">
+                    <thead>
+                        <tr>
+                            <th>User Role</th>
+                            <th>Name</th>
+                            <th>RFID UID</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status late">Teacher</span></td>
+                            <td>Marjorie Rojas</td>
+                            <td><code>8E:45:C2:A1</code></td>
+                            <td>Active</td>
+                            <td>
+                                <button class="action-btn edit-btn">✏️</button>
+                                <button class="action-btn delete-btn" onclick="deleteRow(this)">🗑️</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="status present">Student</span></td>
+                            <td>Nadzmi Gapur Abah</td>
+                            <td><code>A4:22:90:F3</code></td>
+                            <td>Active</td>
+                            <td>
+                                <button class="action-btn edit-btn">✏️</button>
+                                <button class="action-btn delete-btn" onclick="deleteRow(this)">🗑️</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="summary-card">
+                <h3>🖥️ RFID Node Status</h3>
+                <div class="summary-item">
+                    <span class="summary-label">CCS Building Node</span>
+                    <span class="summary-value" style="color: #38a169;">Online</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Classroom Scanner</span>
+                    <span class="summary-value" style="color: #38a169;">Online</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Database Sync</span>
+                    <span class="summary-value" style="color: #9e1b32;">Last: 2m ago</span>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button class="filter-btn">🛠️ System Hardware Diagnostics</button>
+                    <button class="filter-btn" style="background: #4a5568; margin-top: 10px;">📄 Download System Logs</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Controls -->
-    <div class="controls">
-        <h2>➕ Add Student</h2>
-        <input type="text" id="studentId" placeholder="Student ID">
-        <input type="text" id="studentName" placeholder="Student Name">
-        <button class="filter-btn" onclick="addStudent()">Add Student</button>
-    </div>
-
-    <!-- Student List -->
-    <div class="attendance-table">
-        <div class="table-header">
-            <div class="table-title">📋 Student List</div>
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Register New User</h3>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="addUserForm">
+                <div class="form-group">
+                    <label>User Role</label>
+                    <select id="role" required>
+                        <option value="Student">Student</option>
+                        <option value="Teacher">Teacher</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" placeholder="e.g. Name of the Student/Teacher" required>
+                </div>
+                <div class="form-group">
+                    <label>RFID UID</label>
+                    <input type="text" id="rfid" placeholder="e.g. A1:B2:C3:D4" required>
+                </div>
+                <button type="submit" class="filter-btn">Save User</button>
+            </form>
         </div>
-
-        <table id="studentTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Dynamic -->
-            </tbody>
-        </table>
     </div>
 
-    <!-- Actions -->
-    <div class="controls">
-        <button class="filter-btn" onclick="clearAll()">🗑 Clear All Data</button>
-    </div>
+    <script>
+        const modal = document.getElementById("userModal");
+        const form = document.getElementById("addUserForm");
+        const addBtn = document.querySelector(".filter-btn");
 
-</div>
+        addBtn.onclick = function() {
+            modal.style.display = "flex";
+        }
 
-<script src="admin.js"></script>
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        // DELETE FUNCTION
+        function deleteRow(btn) {
+            if(confirm("Are you sure you want to delete this user?")) {
+                var row = btn.parentNode.parentNode;
+                row.parentNode.removeChild(row);
+            }
+        }
+
+        form.onsubmit = function(e) {
+            e.preventDefault();
+
+            const role = document.getElementById("role").value;
+            const name = document.getElementById("fullName").value;
+            const rfid = document.getElementById("rfid").value;
+            const statusClass = role === "Student" ? "present" : "late";
+
+            const tableBody = document.querySelector("tbody");
+            const newRow = document.createElement("tr");
+
+            newRow.innerHTML = `
+                <td><span class="status ${statusClass}">${role}</span></td>
+                <td>${name}</td>
+                <td><code>${rfid}</code></td>
+                <td>Active</td>
+                <td>
+                    <button class="action-btn edit-btn">✏️</button>
+                    <button class="action-btn delete-btn" onclick="deleteRow(this)">🗑️</button>
+                </td>
+            `;
+
+            tableBody.appendChild(newRow);
+            form.reset();
+            closeModal();
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) closeModal();
+        }
+    </script>
 </body>
 </html>
