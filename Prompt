@@ -1,0 +1,94 @@
+Create a complete RFID Attendance System for Western Mindanao State University (WMSU) using only HTML, CSS, and JavaScript (no backend).
+
+SYSTEM REQUIREMENTS:
+
+1. Pages:
+
+* index.html (Login page for Admin and Teacher)
+* teacher.html (Teacher dashboard with class list and attendance)
+* admin.html (Admin panel with add/remove student feature)
+* terminal.html (RFID scanner simulation page — DO NOT REMOVE)
+
+2. Design:
+
+* Use WMSU theme colors: crimson red (#9e1b32), white, light gray
+* Clean modern UI (cards, tables, responsive layout)
+
+3. Login System:
+
+* Admin: username = admin, password = 1234
+* Teacher: username = teacher, password = 1234
+* Redirect based on role
+
+4. Student Database:
+   Use JavaScript array or localStorage.
+   Each student must include:
+
+* Student ID
+* Name
+* Email
+* Contact
+* Course
+
+PRELOAD THIS EXACT DATA:
+
+let students = [
+{ id:'2025-02907', name:'ABAH, NADZMI GAPUR.', email:'[ty202502907@wmsu.edu.ph](mailto:ty202502907@wmsu.edu.ph)', contact:'09525211681', course:'ACT-AD' },
+{ id:'2025-02697', name:'AGEAS, ROVHIC CHAWEE ALESNA.', email:'[ty202502697@wmsu.edu.ph](mailto:ty202502697@wmsu.edu.ph)', contact:'09756606540', course:'ACT-AD' },
+{ id:'2025-01218', name:'AHAMAD, AINEE HANA TAN.', email:'[ty202501218@wmsu.edu.ph](mailto:ty202501218@wmsu.edu.ph)', contact:'09662668468', course:'ACT-AD' },
+{ id:'2025-02109', name:'AKBARA, AMILHAN MANCERAS.', email:'[ty202502109@wmsu.edu.ph](mailto:ty202502109@wmsu.edu.ph)', contact:'09539430119', course:'ACT-AD' },
+{ id:'2025-01689', name:'ALAVERA, RHAINIEL GENESIS G.', email:'[ty202501689@wmsu.edu.ph](mailto:ty202501689@wmsu.edu.ph)', contact:'09914790767', course:'ACT-AD' },
+{ id:'2025-02141', name:'ALVAREZ, JERIC LINTO.', email:'[ty202502141@wmsu.edu.ph](mailto:ty202502141@wmsu.edu.ph)', contact:'09941895979', course:'ACT-AD' },
+{ id:'2025-02972', name:'BAGARINAO, ONYX FERRER.', email:'[ty202502972@wmsu.edu.ph](mailto:ty202502972@wmsu.edu.ph)', contact:'09706995348', course:'ACT-AD' },
+{ id:'2025-00580', name:'BAKILI, MUTALIB ALAJA.', email:'[ty202500580@wmsu.edu.ph](mailto:ty202500580@wmsu.edu.ph)', contact:'09752773988', course:'ACT-AD' },
+{ id:'2025-02122', name:'BANGAHAN, MOHAMMAD RIDZMAR-YAQEEN DAHAM.', email:'[ty202502122@wmsu.edu.ph](mailto:ty202502122@wmsu.edu.ph)', contact:'09082174522', course:'ACT-AD' },
+{ id:'2025-02106', name:'CABUAL, CHRISTIAN JOSHUA FELICIANO.', email:'[ty202502106@wmsu.edu.ph](mailto:ty202502106@wmsu.edu.ph)', contact:'09956656073', course:'ACT-AD' },
+{ id:'2025-01791', name:'DELA CRUZ, SHEINA LOVE ABDULKADIL.', email:'[ty202501791@wmsu.edu.ph](mailto:ty202501791@wmsu.edu.ph)', contact:'09559703541', course:'ACT-AD' },
+{ id:'2025-01344', name:'ESPIRITU, ARCHILLES HALILONG.', email:'[ty202501344@wmsu.edu.ph](mailto:ty202501344@wmsu.edu.ph)', contact:'09625133274', course:'ACT-AD' },
+{ id:'2025-01246', name:'FLORES, JOSHUA PEPITO.', email:'[ty202501246@wmsu.edu.ph](mailto:ty202501246@wmsu.edu.ph)', contact:'09976101850', course:'ACT-AD' },
+{ id:'2025-02969', name:'GALLEPOSO, SAM DANIEL.', email:'[ty202502969@wmsu.edu.ph](mailto:ty202502969@wmsu.edu.ph)', contact:'09923503607', course:'ACT-AD' },
+{ id:'2025-02128', name:'HITGANO, RICH CEZARINA LAYCA ALFON.', email:'[ty202502128@wmsu.edu.ph](mailto:ty202502128@wmsu.edu.ph)', contact:'09178401442', course:'ACT-AD' },
+{ id:'2025-02864', name:'MAMANTAR, JHERYANNE JULIAN.', email:'[ty202502864@wmsu.edu.ph](mailto:ty202502864@wmsu.edu.ph)', contact:'N/A', course:'ACT-AD' },
+{ id:'2025-02717', name:'MOHAMMAD, ALLYSA NAVARRO.', email:'[ty202502717@wmsu.edu.ph](mailto:ty202502717@wmsu.edu.ph)', contact:'09533511003', course:'ACT-AD' },
+{ id:'2025-01220', name:'PEREYRA, KRIS MARIANE DRAGON.', email:'[ty202501220@wmsu.edu.ph](mailto:ty202501220@wmsu.edu.ph)', contact:'09682079072', course:'ACT-AD' },
+{ id:'2025-00650', name:'PRIAS, CARL IAN REYES.', email:'[ty202500650@wmsu.edu.ph](mailto:ty202500650@wmsu.edu.ph)', contact:'09941883048', course:'ACT-AD' },
+{ id:'2025-03364', name:'PUERTO, ANGEL GRACE PAING.', email:'[ty202503364@wmsu.edu.ph](mailto:ty202503364@wmsu.edu.ph)', contact:'N/A', course:'ACT-AD' },
+{ id:'2025-00538', name:'PULA, CRISDIANTHY LUKUH.', email:'[ty202500538@wmsu.edu.ph](mailto:ty202500538@wmsu.edu.ph)', contact:'09559906343', course:'ACT-AD' },
+{ id:'2025-00296', name:'SAILELA, CASSANDRA ASHLEY BAYABOS.', email:'[ty202500296@wmsu.edu.ph](mailto:ty202500296@wmsu.edu.ph)', contact:'09684278312', course:'ACT-AD' },
+{ id:'2025-00716', name:'SOLAMBAO, KRYZEL JOY SALAHOP.', email:'[ty202500716@wmsu.edu.ph](mailto:ty202500716@wmsu.edu.ph)', contact:'09060441644', course:'ACT-AD' },
+{ id:'2025-02680', name:'TAGAYAN, YLLISHEDRINE HAMDANI.', email:'[ty202502680@wmsu.edu.ph](mailto:ty202502680@wmsu.edu.ph)', contact:'09947536766', course:'ACT-AD' },
+{ id:'2025-00169', name:'TAMPARONG, NOVIE JOZANE DICHOSO.', email:'[ty202500169@wmsu.edu.ph](mailto:ty202500169@wmsu.edu.ph)', contact:'09533048169', course:'ACT-AD' },
+{ id:'2025-00272', name:'TAROG, REYMER BOLO.', email:'[ty202500272@wmsu.edu.ph](mailto:ty202500272@wmsu.edu.ph)', contact:'09947932120', course:'ACT-AD' },
+{ id:'2017-01278', name:'TELAN, YVONNE REDJ FRANCISCO.', email:'[lc201701278@wmsu.edu.ph](mailto:lc201701278@wmsu.edu.ph)', contact:'09359102276', course:'ACT-AD' },
+{ id:'2025-00326', name:'TUBLE, DARELL DELEON.', email:'[ty202500326@wmsu.edu.ph](mailto:ty202500326@wmsu.edu.ph)', contact:'09937089426', course:'ACT-AD' },
+{ id:'2025-00290', name:'VICENTE, ELLICE ROSE SOLANO.', email:'[ty202500290@wmsu.edu.ph](mailto:ty202500290@wmsu.edu.ph)', contact:'09934738659', course:'ACT-AD' },
+{ id:'2025-02601', name:'VILLALOBOS, RURIK RAE RELLON.', email:'[ty202502601@wmsu.edu.ph](mailto:ty202502601@wmsu.edu.ph)', contact:'09205384347', course:'ACT-AD' }
+];
+
+5. Teacher Dashboard:
+
+* Display full class list
+* Show attendance status
+
+6. Admin Panel:
+
+* Add student
+* Delete student
+* Sync changes across system
+
+7. Terminal Scanner:
+
+* Input field simulating RFID
+* If ID exists → show student name + PRESENT
+* If not → NOT FOUND
+
+8. Logic:
+
+* Use JavaScript + localStorage
+* All data should persist
+
+9. Output:
+   Generate full working files:
+   index.html, teacher.html, admin.html, terminal.html, style.css, script.js
+
+Ensure everything is connected and functional.
