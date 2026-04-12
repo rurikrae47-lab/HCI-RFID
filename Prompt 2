@@ -1,0 +1,219 @@
+Create a complete RFID Attendance Management System for Western Mindanao State University (WMSU) using:
+
+* Frontend: HTML, CSS, JavaScript
+* Backend: PHP (no frameworks)
+* Database: MySQL
+
+SYSTEM OVERVIEW:
+This system should simulate and support real RFID-based attendance where a UID (RFID card) is sent to the system and logged in the database.
+
+---
+
+1. SYSTEM STRUCTURE
+
+---
+
+Create the following pages:
+
+1. index.php
+
+* Login page for Admin and Teacher
+* Session-based authentication
+
+2. dashboard_teacher.php
+
+* View class list
+* View attendance records
+* Filter by date
+
+3. dashboard_admin.php
+
+* Manage students (Add / Edit / Delete)
+* Manage RFID UID assignment
+* View all attendance logs
+
+4. terminal.php
+
+* RFID Scanner page (DO NOT REMOVE)
+* Accept UID input (simulate RFID scan)
+* Automatically log attendance
+
+5. logout.php
+
+* Destroy session and redirect to login
+
+---
+
+2. DESIGN REQUIREMENTS
+
+---
+
+* Use WMSU theme:
+
+  * Crimson (#9e1b32)
+  * White
+  * Light gray background
+* Clean dashboard UI
+* Cards, tables, buttons
+* Responsive layout
+
+---
+
+3. DATABASE STRUCTURE (MySQL)
+
+---
+
+Provide SQL for creating database and tables:
+
+Database: wmsu_rfid
+
+Tables:
+
+users:
+
+* id (INT, PK, AUTO_INCREMENT)
+* username
+* password (hashed)
+* role (admin / teacher)
+
+students:
+
+* id (INT, PK, AUTO_INCREMENT)
+* student_id (VARCHAR)
+* name
+* email
+* contact
+* course
+* rfid_uid (VARCHAR)
+
+attendance:
+
+* id (INT, PK, AUTO_INCREMENT)
+* student_id (VARCHAR)
+* rfid_uid (VARCHAR)
+* date
+* time
+* status (PRESENT / LATE / ABSENT)
+
+---
+
+4. DEFAULT LOGIN
+
+---
+
+Admin:
+
+* username: admin
+* password: 1234
+
+Teacher:
+
+* username: teacher
+* password: 1234
+
+---
+
+5. RFID LOGIC (IMPORTANT)
+
+---
+
+In terminal.php:
+
+* Input field simulates RFID scan (UID)
+* When UID is entered:
+
+1. Check if UID exists in students table
+2. If found:
+
+   * Get student info
+   * Get current time
+   * Apply rules:
+     before 2:30 PM → PRESENT
+     before 2:50 PM → LATE
+     after → ABSENT
+   * Save to attendance table
+   * Display:
+     student name
+     status
+3. If not found:
+
+   * Display "RFID NOT REGISTERED"
+
+---
+
+6. ADMIN FEATURES
+
+---
+
+* Add new student
+* Assign RFID UID to student
+* Edit student info
+* Delete student
+* View attendance logs
+
+---
+
+7. TEACHER FEATURES
+
+---
+
+* View all students
+* View attendance per day
+* Highlight:
+
+  * Present (green)
+  * Late (yellow)
+  * Absent (red)
+
+---
+
+8. SECURITY
+
+---
+
+* Use PHP sessions for login
+* Protect dashboard pages (no direct access)
+* Sanitize inputs (basic validation)
+
+---
+
+9. FILE STRUCTURE
+
+---
+
+Provide full working code for:
+
+* index.php
+* dashboard_teacher.php
+* dashboard_admin.php
+* terminal.php
+* logout.php
+* config.php (database connection)
+* style.css
+* script.js
+* database.sql
+
+---
+
+10. OUTPUT REQUIREMENT
+
+---
+
+* All files must be complete and connected
+* Code must be clean and functional
+* System should run in XAMPP or any PHP server
+
+---
+
+11. BONUS (OPTIONAL BUT PREFERRED)
+
+---
+
+* Auto-refresh attendance table
+* Show latest scanned student on terminal
+* Prevent duplicate scans within same day
+
+---
+
+FINAL INSTRUCTION:
+Generate the FULL working system with all files, including SQL database setup. Ensure everything works together and is ready to run locally.
