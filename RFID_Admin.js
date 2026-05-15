@@ -17,7 +17,7 @@ const SUBJECT_CATALOG = [
 function switchRegType(type) {
     activeRegType = type;
     document.querySelectorAll('.reg-btn').forEach(b => b.classList.remove('active'));
-    const btn = document.getElementById(btn-reg-${type.toLowerCase()});
+    const btn = document.getElementById(`btn-reg-${type.toLowerCase()}`);
     if (btn) btn.classList.add('active');
     
     const studentFields = document.getElementById('student-only-fields');
@@ -102,7 +102,7 @@ function initSystem() {
                     const attendance = JSON.parse(e.newValue);
                     if (attendance.length > 0) {
                         const latest = attendance[0];
-                        showAdminToast(<strong style="color: var(--wmsu-red);">NEW SCAN DETECTED</strong><br><b>${latest.name}</b><br><small>${latest.subject} | ${latest.status}</small>, latest.timestamp, latest.id);
+                        showAdminToast(`<strong style="color: var(--wmsu-red);">NEW SCAN DETECTED</strong><br><b>${latest.name}</b><br><small>${latest.subject} | ${latest.status}</small>`, latest.timestamp, latest.id);
                     }
                 } catch (err) { console.error("Toast notification failed:", err); }
             }
@@ -114,7 +114,7 @@ function showAdminToast(msg, timestamp, userId) {
     const toast = document.getElementById('admin-toast');
     const content = document.getElementById('admin-toast-content');
     if (toast && content) {
-        const btnHtml = <button onclick="event.stopPropagation(); showUserDetails('${userId}'); document.getElementById('admin-toast').style.display='none';" style="margin-top: 10px; display: block; background: var(--wmsu-red); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);">VIEW PROFILE</button>;
+        const btnHtml = `<button onclick="event.stopPropagation(); showUserDetails('${userId}'); document.getElementById('admin-toast').style.display='none';" style="margin-top: 10px; display: block; background: var(--wmsu-red); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);">VIEW PROFILE</button>`;
         content.innerHTML = msg + btnHtml;
         toast.style.display = 'flex';
         toast.style.cursor = 'pointer';
@@ -128,7 +128,7 @@ function showAdminToast(msg, timestamp, userId) {
                 renderAttendanceTable();
             }
             setTimeout(() => {
-                const row = document.getElementById(attendance-row-${timestamp});
+                const row = document.getElementById(`attendance-row-${timestamp}`);
                 if (row) {
                     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     row.style.transition = 'background 0.5s ease';
@@ -171,7 +171,7 @@ function handleAddAnnouncement(e) {
     localStorage.setItem('wmsu_announcements', JSON.stringify(announcements));
     closeAnnouncementModal();
     renderAnnouncementsTable();
-    addAdminLog('INFO', Broadcast Sent: ${title});
+    addAdminLog('INFO', `Broadcast Sent: ${title}`);
     this.reset();
 }
 
@@ -305,7 +305,7 @@ function handleAddUser(e) {
         history: []
     };
 
-    newUser.name = ${newUser.lastName}, ${newUser.firstName} ${newUser.middleName}.trim();
+    newUser.name = `${newUser.lastName}, ${newUser.firstName} ${newUser.middleName}`.trim();
 
     let currentUsers = JSON.parse(localStorage.getItem('wmsu_users')) || [];
     
@@ -336,8 +336,8 @@ function renderUserTable() {
     weekStart.setHours(0, 0, 0, 0);
 
     tbody.innerHTML = users.map(u => {
-        const fullName = u.name || ${u.lastName}, ${u.firstName} ${u.middleName || ''}.trim();
-        const classInfo = u.role === 'Student' ? ${u.year || 'N/A'}-${u.section || 'N/A'} : (u.section || 'N/A');
+        const fullName = u.name || `${u.lastName}, ${u.firstName} ${u.middleName || ''}`.trim();
+        const classInfo = u.role === 'Student' ? `${u.year || 'N/A'}-${u.section || 'N/A'}` : (u.section || 'N/A');
         const academicYear = u.academicYear || 'N/A';
 
         let weeklyPercent = "0%";
@@ -346,7 +346,7 @@ function renderUserTable() {
             const expectedSessions = schedule
                 .filter(s => {
                     const schedSec = s.section.toUpperCase();
-                    return schedSec === userSection || schedSec.includes( ${userSection}) || schedSec.startsWith(${userSection} ) || s.section === "ALL";
+                    return schedSec === userSection || schedSec.includes(` ${userSection}`) || schedSec.startsWith(`${userSection} `) || s.section === "ALL";
                 })
                 .reduce((acc, s) => acc + (s.days ? s.days.length : 0), 0);
 
@@ -356,7 +356,7 @@ function renderUserTable() {
             if (expectedSessions > 0) {
                 const calc = Math.min(100, Math.round((uniqueAttended / expectedSessions) * 100));
                 const color = calc >= 80 ? '#38a169' : (calc >= 50 ? '#d69e2e' : '#e53e3e');
-                weeklyPercent = <span style="color: ${color}; font-weight: 800;">${calc}%</span>;
+                weeklyPercent = `<span style="color: ${color}; font-weight: 800;">${calc}%</span>`;
             }
         }
 
@@ -379,11 +379,11 @@ function renderUserTable() {
 }
 
 function deleteUser(id) {
-    if (confirm(Permanently remove ID Number: ${id} from registry?)) {
+    if (confirm(`Permanently remove ID Number: ${id} from registry?`)) {
         let updatedUsers = users.filter(u => u.id !== id);
         localStorage.setItem('wmsu_users', JSON.stringify(updatedUsers));
         
-        addAdminLog('WARN', User Removed: ${id}); // Log the action
+        addAdminLog('WARN', `User Removed: ${id}`); // Log the action
         users = updatedUsers; // Update local state
         renderUserTable(); // Re-render table
         updateStats(); // Update dashboard stats
@@ -400,7 +400,7 @@ function updateStats() {
     
     if (countEl) countEl.innerText = total.toLocaleString();
     if (subEl) {
-        subEl.innerHTML = <span onclick="navigateToUsers('Student')" style="cursor:pointer; text-decoration:underline; color: var(--wmsu-red); font-weight: 700;">${students.toLocaleString()} Students</span> | <span onclick="navigateToUsers('Faculty')" style="cursor:pointer; text-decoration:underline; color: #4338ca; font-weight: 700;">${faculty.toLocaleString()} Faculty</span>;
+        subEl.innerHTML = `<span onclick="navigateToUsers('Student')" style="cursor:pointer; text-decoration:underline; color: var(--wmsu-red); font-weight: 700;">${students.toLocaleString()} Students</span> | <span onclick="navigateToUsers('Faculty')" style="cursor:pointer; text-decoration:underline; color: #4338ca; font-weight: 700;">${faculty.toLocaleString()} Faculty</span>`;
     }
 }
 
@@ -464,7 +464,7 @@ function renderLogs(filter = activeLogFilter, btn = null) {
             timeText = highlightResult(timeText, keyword);
         }
 
-        return <div class="log-entry ${cls}"><span class="log-time">[${timeText}]</span> <span style="color: ${l.type==='ERROR'?'#e53e3e':(l.type==='WARN'?'#f6ad55':'#48bb78')}">${typeText}:</span> ${msg}</div>;
+        return `<div class="log-entry ${cls}"><span class="log-time">[${timeText}]</span> <span style="color: ${l.type==='ERROR'?'#e53e3e':(l.type==='WARN'?'#f6ad55':'#48bb78')}">${typeText}:</span> ${msg}</div>`;
     }).join('') || '<div style="padding: 20px; color: #718096;">No logs matching criteria.</div>';
 }
 
@@ -508,7 +508,7 @@ function renderDevices(targetId = 'device-grid-container') {
                 <div class="meta-item">Signal: <b>${d.signal}</b></div>
                 <div class="meta-item">Version: <b>${d.version}</b></div>
             </div>
-            ${d.status === 'Offline' ? <button class="btn btn-primary" style="width: 100%; margin-top: 15px; font-size: 0.8rem;" onclick="rebootDevice('${d.id}')">Reboot Hardware</button> : ''}
+            ${d.status === 'Offline' ? `<button class="btn btn-primary" style="width: 100%; margin-top: 15px; font-size: 0.8rem;" onclick="rebootDevice('${d.id}')">Reboot Hardware</button>` : ''}
         </div>
     `).join('');
 }
@@ -520,7 +520,7 @@ function rebootDevice(id) {
         devices[idx].status = 'Online';
         devices[idx].uptime = '0s';
         localStorage.setItem('wmsu_devices', JSON.stringify(devices));
-        addAdminLog('INFO', Hardware Node Rebooted: ${id});
+        addAdminLog('INFO', `Hardware Node Rebooted: ${id}`);
         renderDevices();
         updateStats();
     }
@@ -528,7 +528,7 @@ function rebootDevice(id) {
 
 function exportLogsCSV() {
     const logs = JSON.parse(localStorage.getItem('wmsu_logs')) || [];
-    const csvContent = "data:text/csv;charset=utf-8," + "Time,Type,Message\n" + logs.map(l => ${l.time},${l.type},"${l.message}").join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + "Time,Type,Message\n" + logs.map(l => `${l.time},${l.type},"${l.message}"`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -553,7 +553,7 @@ function renderAttendanceTable() {
         <tr id="attendance-row-${a.timestamp}">
             <td>
                 <div style="font-weight:700;">IN: ${new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                ${a.timeOut ? <div style="color:var(--wmsu-red); font-size:0.75rem;">OUT: ${new Date(a.timeOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div> : '<div style="color:#718096; font-size:0.7rem;">(Active)</div>'}
+                ${a.timeOut ? `<div style="color:var(--wmsu-red); font-size:0.75rem;">OUT: ${new Date(a.timeOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>` : '<div style="color:#718096; font-size:0.7rem;">(Active)</div>'}
             </td>
             <td>${a.name}</td>
             <td>${a.id}</td>
@@ -578,13 +578,13 @@ function exportAttendanceCSV() {
 
     const headers = "Timestamp,Name,ID,Subject,Status\n";
     const csvContent = attendance.map(a => 
-        "${new Date(a.timestamp).toLocaleString()}", "${a.name}", "${a.id}", "${a.subject}", "${a.status}"
+        `"${new Date(a.timestamp).toLocaleString()}", "${a.name}", "${a.id}", "${a.subject}", "${a.status}"`
     ).join("\n");
 
     const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = Attendance_Report_${new Date().toISOString().split('T')[0]}.csv;
+    link.download = `Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 }
 
@@ -608,13 +608,13 @@ function exportWeeklyReportCSV() {
         const attended = new Set(userWeekLogs.map(l => l.subject + new Date(l.timestamp).toDateString())).size;
         const rate = expected > 0 ? Math.round((attended / expected) * 100) : 0;
         
-        return "${u.id}","${u.name}","${userSection}",${expected},${attended},"${rate}%";
+        return `"${u.id}","${u.name}","${userSection}",${expected},${attended},"${rate}%"`;
     }).join("\n");
 
     const blob = new Blob([headers + csvData], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = Weekly_Attendance_Analysis_${new Date().toISOString().split('T')[0]}.csv;
+    link.download = `Weekly_Attendance_Analysis_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     addAdminLog('INFO', 'Weekly Analytical Report generated.');
 }
@@ -625,24 +625,24 @@ function exportScheduleCSV() {
 
     const headers = "Subject,Code,Days,StartTime,EndTime,Room,Section,LateMinutes,Units,Instructor\n";
     const csvContent = schedule.map(s => 
-        "${s.subject}",${s.code},"${s.days.join('; ')}",${s.startTime},${s.endTime},${s.room},"${s.section}",${s.lateMinutes},${s.units},"${s.instructor || 'TBD'}"
+        `"${s.subject}",${s.code},"${s.days.join('; ')}",${s.startTime},${s.endTime},${s.room},"${s.section}",${s.lateMinutes},${s.units},"${s.instructor || 'TBD'}"`
     ).join("\n");
 
     const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = WMSU_Master_Schedule_${new Date().toISOString().split('T')[0]}.csv;
+    link.download = `WMSU_Master_Schedule_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     addAdminLog('INFO', 'Master Schedule exported to CSV file.');
 }
 
 function openBulkModal() { document.getElementById('bulkUserModal').style.display = 'flex'; }
 function closeBulkModal() { document.getElementById('bulkUserModal').style.display = 'none'; }
-
 function processBulkUpload() {
     const fileInput = document.getElementById('bulkCsvFile');
     if (!fileInput.files.length) { alert("Please select a CSV file first."); return; }
-
+    
+   
     const metadata = {
         curriculum: document.getElementById('bulkCurriculum').value,
         section: document.getElementById('bulkSection').value.trim().toUpperCase(),
@@ -658,10 +658,10 @@ function processBulkUpload() {
         let addedCount = 0;
 
         lines.forEach((line, index) => {
-            if (index === 0 || !line.trim()) return; // Skip header or empty lines
+            if (index === 0 || !line.trim()) return; 
             const cols = line.split(',').map(c => c.trim());
             
-            if (cols.length >= 3) { // Minimum requirement: ID, LastName, FirstName
+            if (cols.length >= 3) {
                 let rawId = cols[0].replace(/[^\w-]/g, '');
                 if (/^[0-9]{9}$/.test(rawId)) rawId = rawId.substring(0, 4) + '-' + rawId.substring(4);
 
@@ -680,7 +680,7 @@ function processBulkUpload() {
                     ...metadata,
                     history: []
                 };
-                newUser.name = ${newUser.lastName}, ${newUser.firstName} ${newUser.middleName}.trim();
+                newUser.name = `${newUser.lastName}, ${newUser.firstName} ${newUser.middleName}`.trim();
 
                 const existingIdx = currentUsers.findIndex(u => u.id === newUser.id);
                 if (existingIdx > -1) currentUsers[existingIdx] = newUser;
@@ -693,9 +693,9 @@ function processBulkUpload() {
         users = currentUsers;
         renderUserTable();
         updateStats();
-        addAdminLog('INFO', Bulk Enrollment Complete: ${addedCount} students registered to ${metadata.curriculum} ${metadata.section});
+        addAdminLog('INFO', `Bulk Enrollment Complete: ${addedCount} students registered to ${metadata.curriculum} ${metadata.section}`);
         closeBulkModal();
-        alert(Successfully enrolled ${addedCount} students.);
+        alert(`Successfully enrolled ${addedCount} students.`);
     };
     reader.readAsText(fileInput.files[0]);
 }
@@ -713,7 +713,6 @@ function filterUsers() {
         const cellRole = tr[i].getElementsByTagName('td')[2];
         if (!cellId || !cellName || !cellRole) continue;
 
-        // Reset to original text before re-evaluating highlights
         const rawId = cellId.textContent;
         const rawName = cellName.textContent;
         const rawRole = cellRole.textContent;
@@ -730,11 +729,10 @@ function filterUsers() {
         const nameText = rawName.toUpperCase();
         const roleText = rawRole.toUpperCase();
 
-        // Try exact substring match across ID, Name, and Role first
         const exactMatch = (idText + " " + nameText + " " + roleText).includes(filter);
         let fuzzyMatch = false;
 
-        // Fuzzy matching logic for names (allows 1 minor spelling mistake for terms of 3+ chars)
+        
         if (!exactMatch && filter.length >= 3) {
             const nameWords = nameText.split(/[\s,.]+/).filter(w => w.length >= 3);
             for (const word of nameWords) {
@@ -771,7 +769,7 @@ function highlightResult(text, term) {
 
     if (textUpper.includes(termUpper)) {
         const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp((${escapedTerm}), 'gi');
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
         return text.replace(regex, '<span class="highlight">$1</span>');
     }
 
@@ -780,7 +778,7 @@ function highlightResult(text, term) {
         return words.map(word => {
             const wordUpper = word.toUpperCase();
             if (word.length >= 3 && levenshteinDistance(wordUpper.substring(0, term.length), termUpper) <= 1) {
-                return <span class="highlight">${word}</span>;
+                return `<span class="highlight">${word}</span>`;
             }
             return word;
         }).join('');
@@ -875,7 +873,7 @@ function updateSubjectPreview() {
         return `<span style="background: white; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--wmsu-red); white-space: nowrap;">
             ${displayTitle}
         </span>`;
-    }).join('') || <span style="font-size:0.7rem; color:var(--text-muted);">Enter section (e.g. 1B) to preview subjects...</span>;
+    }).join('') || `<span style="font-size:0.7rem; color:var(--text-muted);">Enter section (e.g. 1B) to preview subjects...</span>`;
 }
 
 function updateAnalytics() {
@@ -908,10 +906,6 @@ function updateAnalytics() {
     if (healthBar) healthBar.style.width = health + '%';
 }
 
-/**
- * FEATURE: Get Faculty-Specific Schedule
- * Used by faculty portals to identify which subjects belong to them.
- */
 function getFacultySchedule(facultyId) {
     const usersList = JSON.parse(localStorage.getItem('wmsu_users')) || [];
     const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
@@ -971,7 +965,7 @@ function handleSubjectSelect(val) {
             opt.text = customName;
             document.getElementById('sched-subject').add(opt, 1);
             document.getElementById('sched-subject').value = customName;
-            codeInput.value = '';
+            codeInut.value = '';
             codeInput.focus();
         }
         return;
@@ -988,7 +982,7 @@ function openScheduleModal(idx = null) {
 
     const subSelect = document.getElementById('sched-subject');
     subSelect.innerHTML = '<option value="">-- Pick Subject --</option>' + 
-        SUBJECT_CATALOG.map(s => <option value="${s.name}">${s.name}</option>).join('') +
+        SUBJECT_CATALOG.map(s => `<option value="${s.name}">${s.name}</option>`).join('') +
         '<option value="custom">Other / Custom Subject...</option>';
 
     document.getElementById('sched-code').value = '';
@@ -1060,10 +1054,10 @@ function handleSaveSchedule() {
     const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
     if (editingScheduleIdx !== null) {
         schedule[editingScheduleIdx] = entry;
-        addAdminLog('INFO', Schedule updated: ${subject} (${section}));
+        addAdminLog('INFO', `Schedule updated: ${subject} (${section})`);
     } else {
         schedule.push(entry);
-        addAdminLog('INFO', Schedule added: ${subject} (${section}));
+        addAdminLog('INFO', `Schedule added: ${subject} (${section})`);
     }
 
     localStorage.setItem('wmsu_schedule', JSON.stringify(schedule));
@@ -1075,10 +1069,10 @@ function deleteSchedule(idx) {
     const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
     const entry = schedule[idx];
     if (!entry) return;
-    if (confirm(Delete schedule for "${entry.subject}" (${entry.section})?)) {
+    if (confirm(`Delete schedule for "${entry.subject}" (${entry.section})?`)) {
         schedule.splice(idx, 1);
         localStorage.setItem('wmsu_schedule', JSON.stringify(schedule));
-        addAdminLog('WARN', Schedule deleted: ${entry.subject} (${entry.section}));
+        addAdminLog('WARN', `Schedule deleted: ${entry.subject} (${entry.section})`);
         renderScheduleTable();
     }
 }
