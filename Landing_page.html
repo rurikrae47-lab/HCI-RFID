@@ -4,75 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMSU | RFID Attendance System</title>
+    <link rel="stylesheet" href="Landing_page.css">
     <link rel="stylesheet" href="onyx.css">
-    <style>
-        .hero {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: white;
-            padding: 20px;
-        }
-        .hero h1 { font-size: 3.5rem; margin-bottom: 10px; font-weight: 800; }
-        .hero p { font-size: 1.2rem; margin-bottom: 40px; opacity: 0.9; }
-        
-        .portal-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            width: 100%;
-            max-width: 1000px;
-        }
-        .portal-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 40px;
-            border-radius: 20px;
-            text-decoration: none;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        .portal-card:hover {
-            background: white;
-            color: #9e1b32;
-            transform: translateY(-10px);
-        }
-        .portal-icon { font-size: 3rem; margin-bottom: 20px; display: block; }
-        .portal-card h2 { font-size: 1.5rem; }
-    </style>
+    <link rel="stylesheet" href="Landing_page_style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="hero">
-        <img src="wmsu_logo.png" alt="WMSU Logo" style="width: 120px; margin-bottom: 20px;">
-        <h1>RFID Attendance Monitoring System</h1>
-        <p>Smart RFID Monitoring System for Western Mindanao State University</p>
+    <nav class="landing-nav">
+        <div class="nav-container">
+            <div class="nav-links">
+                <img src="C:/Users/RRRV/Downloads/Slide47.JPG" alt="WMSU" style="height: 40px; width: 40px; border-radius: 50%; object-fit: contain; background: white; padding: 2px;">
+                <a href="#">Home</a>
+                <a href="#about">About</a>
+                <a href="#how-it-works">How it Works</a>
+            </div>
+            <div class="nav-auth">
+                <a href="RFID_4.html" class="nav-auth-btn primary" style="text-decoration: none; display: inline-block;">Terminal Scanner</a>
+                <a href="Login.html" class="nav-auth-btn primary" style="text-decoration: none; display: inline-block;">System Login</a>
+            </div>
+        </div>
+    </nav>
 
-        <div class="portal-grid" style="max-width: 1200px;">
-            <a href="RFID_Admin.html" class="portal-card">
-                <span class="portal-icon">⚙️</span>
-                <h2>Admin Portal</h2>
-                <p>System Management & Logs</p>
-            </a>
-            <a href="onyx.html" class="portal-card">
-                <span class="portal-icon">👩‍🏫</span>
-                <h2>Teacher Portal</h2>
-                <p>Class Records & Reports</p>
-            </a>
-            <a href="RFID_4.html" class="portal-card" style="border: 2px solid #9e1b32;">
-                <span class="portal-icon">📟</span>
-                <h2>Terminal Station</h2>
-                <p>Live Student Scanning</p>
-            </a>
-            <a href="student_dashboard.html" class="portal-card">
-                <span class="portal-icon">🆔</span>
-                <h2>Student Portal</h2>
-                <p>Check Personal Attendance</p>
-            </a>
+    <input type="checkbox" id="modal-support" class="logic-gate" hidden>
+
+    <header class="hero animate-up">
+        <div class="hero-content animate-up" style="max-width: 800px; margin: 0 auto;">
+            <img src="C:/Users/RRRV/Downloads/Slide47.JPG" alt="WMSU Logo" 
+                 style="width: 140px; height: 140px; margin-bottom: 30px; border-radius: 50%; object-fit: contain; 
+                        mix-blend-mode: multiply; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+                        animation: floating 3s ease-in-out infinite;">
+            <h1 style="font-size: 4rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">WMSU <span class="text-crimson">Smart</span> Attendance</h1>
+            <p style="font-size: 1.2rem; margin: 0 auto 40px auto; text-shadow: 1px 1px 5px rgba(0,0,0,0.5);">A unified RFID ecosystem designed for Western Mindanao State University. Streamline attendance, enhance security, and generate real-time analytics with a single tap.</p>
+            <div class="hero-btns">
+                <a href="Login.html" class="cta-btn" style="display: inline-block; text-decoration: none;">Get Started</a>
+                <a href="#features" class="cta-btn secondary">Learn More</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="modal-overlay support-overlay">
+        <div class="modal-card animate-up" style="max-width: 600px;">
+            <label for="modal-support" class="close-modal">&times;</label>
+            <h2 style="color: var(--crimson); margin-bottom: 10px;">System Support</h2>
+            <p style="color: var(--text-dim); margin-bottom: 25px; font-size: 0.9rem;">Need help with the WMSU RFID System?</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: white; margin-bottom: 10px; border-bottom: 1px solid var(--crimson); padding-bottom: 5px;">Troubleshooting</h4>
+                    <ul style="color: var(--text-dim); font-size: 0.8rem; padding-left: 15px; line-height: 1.6;">
+                        <li><strong>Tag Not Found:</strong> Wipe the card chip and try again.</li>
+                        <li><strong>Invalid ID:</strong> Ensure you are using the YYYY-XXXXX format.</li>
+                    </ul>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: white; margin-bottom: 10px; border-bottom: 1px solid var(--crimson); padding-bottom: 5px;">Common FAQs</h4>
+                    <div style="font-size: 0.8rem; color: var(--text-dim); line-height: 1.5;">
+                        <p><strong>Q: Can I use my old ID?</strong><br>A: No, only RFID-enabled cards work.</p>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: left; margin-top: 10px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <h4 style="color: white; margin-bottom: 10px;">Help Desk Contact</h4>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <p style="color: var(--text-dim); font-size: 0.8rem; line-height: 1.6; margin: 0;">
+                        support.rfid@wmsu.edu.ph<br>
+                        CCS ICT Lab, Ground Floor
+                    </p>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.7rem; color: #48bb78; display: block; margin-bottom: 5px;">Response Time: < 24hrs</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="cta-btn" style="width: 100%; border: none; font-size: 1rem; margin-top: 25px;" onclick="document.getElementById('modal-support').checked = false;">Return to Home</button>
         </div>
     </div>
+
+    <section id="about" class="portal-section animate-up" style="padding: 60px 10%;">
+        <div class="section-header">
+            <h2>About the Project</h2>
+            <p>Developed by RFID Group 4 - ACT AD-1B </p>
+        </div>
+        <div style="max-width: 900px; margin: 0 auto; line-height: 1.8; color: var(--text-main);">
+            <p>The WMSU RFID Attendance System is a capstone initiative designed to modernize the academic environment of Western Mindanao State University. By transitioning from manual pen-and-paper logs to a digital, contact-free infrastructure, we aim to eliminate human error, prevent attendance proxying, and provide faculty members with instantaneous, actionable data regarding student presence.</p>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="portal-section animate-up" style="background: rgba(0,0,0,0.4);">
+        <div class="section-header">
+            <h2>How It Works</h2>
+            <p>Four simple steps to a smarter classroom.</p>
+        </div>
+        <div class="portal-grid" style="margin-top: 20px;">
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg></span>
+                <h2>1. Enrollment</h2>
+                <p>Admin registers the student's unique RFID UID into the central WMSU database.</p>
+            </div>
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></span>
+                <h2>2. Authentication</h2>
+                <p>Student taps their ID card on the Terminal Station upon entering the classroom.</p>
+            </div>
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                <h2>3. Validation</h2>
+                <p>The system verifies the ID and checks the current time against the class schedule.</p>
+            </div>
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span>
+                <h2>4. Sync</h2>
+                <p>Attendance is recorded and immediately reflected on the Teacher and Student dashboards.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="portal-section animate-up" style="animation-delay: 0.3s;">
+        <div class="section-header">
+            <h2>System Features</h2>
+            <p>Engineered for speed, security, and administrative ease.</p>
+        </div>
+        <div class="portal-grid animate-up">
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></span>
+                <h2>Instant Scanning</h2>
+                <p>High-speed RFID detection ensures students can log in within milliseconds, preventing classroom queues.</p>
+            </div>
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
+                <h2>Live Analytics</h2>
+                <p>Teachers and admins get real-time data visualization of attendance trends and student participation.</p>
+            </div>
+            <div class="portal-card" style="cursor: default;">
+                <span class="portal-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+                <h2>Secure & Robust</h2>
+                <p>Encrypted identification prevents spoofing and ensures data integrity across the campus network.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 60px 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); color: var(--text-dim); font-size: 0.85rem; background: rgba(0,0,0,0.8);">
+        <img src="C:/Users/RRRV/Downloads/Slide47.JPG" alt="WMSU" style="height: 30px; width: 30px; margin-bottom: 20px; border-radius: 50%; object-fit: contain; background: white; padding: 2px; opacity: 0.8;">
+        <p>&copy; 2024 Western Mindanao State University. All Rights Reserved.</p>
+    </footer>
+
+    <script src="Landing_page.js"></script>
 </body>
 </html>
