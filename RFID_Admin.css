@@ -1,0 +1,98 @@
+:root {
+    --wmsu-red: #9e1b32;
+    --sidebar-bg: #0f0f0f;
+    --accent: #e53e3e;
+    --glass: rgba(255, 255, 255, 0.8);
+}
+.btn-emphasized {
+    background: var(--wmsu-red) !important;
+    color: white !important;
+    padding: 12px 28px !important;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+}
+.search-box {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 300px;
+}
+.device-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 1.5rem;
+}
+.device-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    border: 1px solid #edf2f7;
+}
+.log-list {
+    background: #1a1a1a;
+    color: #a0aec0;
+    padding: 20px;
+    border-radius: 12px;
+    font-family: 'Courier New', monospace;
+    max-height: 400px;
+    overflow-y: auto;
+}
+#nav-dashboard:checked ~ .app-container .nav-links label[for="nav-dashboard"],
+#nav-users:checked ~ .app-container .nav-links label[for="nav-users"],
+#nav-logs:checked ~ .app-container .nav-links label[for="nav-logs"] {
+    background: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid white;
+    color: white;
+}
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.infra-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+.infra-group {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 8px 8px 20px rgba(0,0,0,0.02);
+    cursor: pointer;
+}
+.infra-group:hover {
+    transform: translateY(-5px);
+    border-top: 4px solid var(--wmsu-red);
+}
+.sidebar { transition: width 0.3s; position: relative; overflow-x: hidden; z-index: 1000; }
+.sidebar.collapsed { width: 85px; }
+.sidebar.collapsed .nav-text, .sidebar.collapsed .user-details { display: none; }
+.nav-item {
+    display: flex; align-items: center; padding: 12px; cursor: pointer;
+}
