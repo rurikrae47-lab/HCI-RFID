@@ -1,0 +1,104 @@
+:root {
+    --crimson: #a31a32;
+    --crimson-dark: #6b0f1e;
+    --crimson-glow: rgba(163, 26, 50, 0.4);
+    --text-main: #ffffff;
+    --text-dim: #a0a0a0;
+    --card-bg: #1a1a1a;
+    --bg-dark: #0a0a0a;
+}
+body {
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)), 
+                url('C:/Users/RRRV/Downloads/WMSU-1024x683.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    overflow-y: auto;
+    margin: 0;
+}
+.portal-section {
+    padding: 80px 10%;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+}
+.portal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-top: 50px;
+}
+.portal-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 40px 20px;
+    border-radius: 20px;
+    text-decoration: none;
+    color: white;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.portal-card:hover {
+    background: rgba(163, 26, 50, 0.15);
+    transform: translateY(-15px);
+    border-color: var(--crimson);
+    box-shadow: 0 20px 40px var(--crimson-glow);
+    color: white;
+}
+.portal-card .portal-icon { font-size: 3rem; margin-bottom: 20px; }
+.portal-card h2 { font-size: 1.4rem; margin-bottom: 10px; }
+.portal-card p { font-size: 0.9rem; opacity: 0.7; }
+
+.hero {
+    background: transparent;
+    overflow: hidden;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    min-height: 80vh;
+    align-items: center;
+}
+.hero-btns {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+.animate-up { animation: fadeInUp 0.5s ease-out both; }
+
+.modal-card {
+    box-shadow: 0 25px 50px -12px rgba(158, 27, 50, 0.4);
+    backdrop-filter: blur(20px);
+    background: rgba(26, 26, 26, 0.9);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.cta-btn:not(.secondary) {
+    background: var(--crimson) !important;
+    color: white !important;
+    border: 1px solid var(--crimson) !important;
+    padding: 12px 28px !important;
+    border-radius: 50px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+    box-shadow: 0 4px 15px rgba(158, 27, 50, 0.3) !important;
+}
+.nav-auth-btn.primary {
+    color: white !important;
+    background: var(--crimson) !important;
+    border-radius: 8px !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+}
+.nav-auth-btn.primary:hover {
+    background: var(--crimson-dark) !important;
+    transform: translateY(-2px);
+}
+.text-crimson { color: var(--crimson) !important; }
