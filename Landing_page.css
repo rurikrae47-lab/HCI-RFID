@@ -1,7 +1,6 @@
 /* =========================================
    LANDING PAGE SPECIFIC STYLES
    ========================================= */
-
 .landing-nav {
     position: fixed;
     top: 0;
@@ -54,17 +53,16 @@
 
 .nav-auth-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(158, 27, 50, 0.3);
 }
 
 /* HERO SECTION */
 .hero {
     height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 0 10%;
-    gap: 50px;
+    justify-content: center;
+    padding: 0 20px;
 }
 
 .hero-content h1 {
