@@ -1,12 +1,33 @@
-let isMaintenanceMode = false;
-let testScanCount = 0;
-let sessionScanCount = 0;
-let lastScans = {};
+let activeRegType = 'Student';
+let users = [];
+let editingUserId = null;
+let searchHistory = JSON.parse(localStorage.getItem('wmsu_search_history')) || [];
+let searchTimeout;
 
-let rfidInput;
-let isProcessingScan = false;
+const SUBJECT_CATALOG = [
+    { name: "Readings in Philippine History", code: "RIPH-101" },
+    { name: "Understanding the Self", code: "GEC-101" },
+    { name: "Human Computer Interaction", code: "HCI-102" },
+    { name: "Introduction to Computing", code: "CC-101" },
+    { name: "Computer Programming", code: "CC-102" },
+    { name: "Discrete Structures", code: "DS-118" },
+    { name: "Movement Competency Training", code: "PATHFIT-1" }
+];
 
-function ensureUserRegistry() {
+function switchRegType(type) {
+    activeRegType = type;
+    document.querySelectorAll('.reg-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`btn-reg-${type.toLowerCase()}`);
+    if (btn) btn.classList.add('active');
+    
+    const studentFields = document.getElementById('student-only-fields');
+    const facultyFields = document.getElementById('faculty-only-fields');
+    if (studentFields) studentFields.style.display = type === 'Student' ? 'block' : 'none';
+    if (facultyFields) facultyFields.style.display = type === 'Faculty' ? 'block' : 'none';
+    if (typeof updateSubjectPreview === "function") updateSubjectPreview();
+}
+
+function initSystem() {
     const existingUsers = JSON.parse(localStorage.getItem('wmsu_users')) || [];
     if (existingUsers.length === 0) {
         const defaultUsers = [
@@ -24,696 +45,1032 @@ function ensureUserRegistry() {
         ];
         localStorage.setItem('wmsu_users', JSON.stringify(defaultUsers));
     }
-    if (!localStorage.getItem('wmsu_attendance')) {
-        localStorage.setItem('wmsu_attendance', JSON.stringify([]));
-    }
-}
-
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar) {
-        sidebar.classList.toggle('collapsed');
-        localStorage.setItem('terminalSidebarCollapsed', sidebar.classList.contains('collapsed'));
-    }
-}
-
-function applySidebarState() {
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar && localStorage.getItem('terminalSidebarCollapsed') === 'true') {
-        sidebar.classList.add('collapsed');
-    }
-}
-
-function openLogoutModal(e) {
-    if (e) e.preventDefault();
-    const modal = document.getElementById('logoutModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-function closeLogoutModal() {
-    const modal = document.getElementById('logoutModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    focusScanner();
-}
-
-function confirmLogout() {
-    window.location.href = 'Landing_page.html';
-}
-
-function closeStudentDetailsModal() {
-    const modal = document.getElementById('studentDetailsModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    focusScanner();
-}
-
-function showStudentDetails(id) {
-    const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
-    const user = users.find(u => u.id === id);
-    if (!user) return;
-
-    const content = document.getElementById('studentDetailsContent');
-    if (content) {
-        content.innerHTML = `
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.id)}&background=dc143c&color=fff&size=100&bold=true" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--wmsu-crimson);">
-                <h3 style="color: var(--text-main); margin-top: 1rem; text-transform: uppercase; font-weight: 700;">${user.name || 'System User'}</h3>
-                <code style="color: var(--wmsu-crimson); font-weight: 800; font-size: 1.1rem;">ID: ${user.id}</code>
-            </div>
-            <div style="display: grid; gap: 1rem;">
-                <div style="background: rgba(15, 23, 42, 0.4); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--panel-border);">
-                    <p style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px;">Academic Role</p>
-                    <p style="color: var(--text-main); font-weight: 600; font-size: 1.1rem;">${user.role || 'Student'}</p>
-                </div>
-                <div style="background: rgba(15, 23, 42, 0.4); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--panel-border);">
-                    <p style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px;">Account Status</p>
-                    <p style="color: ${user.status === 'Active' ? 'var(--success)' : 'var(--wmsu-crimson)'}; font-weight: 800; font-size: 1.1rem;">${(user.status || 'Active').toUpperCase()}</p>
-                </div>
-            </div>
-        `;
+    
+    if (!localStorage.getItem('wmsu_devices')) {
+        localStorage.setItem('wmsu_devices', JSON.stringify([
+            { id: "HW-772-B", name: "Main Entrance Node", status: "Online", type: "Master", ip: "192.168.1.55", uptime: "14d 2h", signal: "Strong", version: "v2.4.1" },
+            { id: "HW-104-A", name: "Admin Office Scanner", status: "Offline", type: "Slave", ip: "192.168.1.104", uptime: "0s", signal: "None", version: "v2.4.0" }
+        ]));
     }
 
-    const modal = document.getElementById('studentDetailsModal');
-    if (modal) modal.style.display = 'flex';
-}
+    if (!localStorage.getItem('wmsu_logs')) {
+        localStorage.setItem('wmsu_logs', JSON.stringify([
+            { time: new Date().toLocaleTimeString(), type: 'INFO', message: 'System Administration Portal Initialized' }
+        ]));
+    }
 
-function toggleMaintenanceMode() {
-    isMaintenanceMode = !isMaintenanceMode;
-    const toggleBtn = document.querySelector('label[for="maintenance-mode-toggle"]');
-    if (toggleBtn) {
-        if (isMaintenanceMode) {
-            toggleBtn.classList.add('active');
-            toggleBtn.style.background = 'var(--warning)';
-            toggleBtn.style.color = 'black';
-        } else {
-            toggleBtn.classList.remove('active');
-            toggleBtn.style.background = '';
-            toggleBtn.style.color = '';
+    const existingSched = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    if (existingSched.length === 0) {
+        const masterSchedule = [
+            { subject: "Readings in Philippine History", code: "RIPH-101", days: ["Tue", "Fri"], startTime: "07:00", endTime: "08:30", room: "LR1", section: "ACT AD 1B", lateMinutes: 15, units: 3, instructor: "REIN RAIN REIGN", semester: "1st Semester" },
+            { subject: "Understanding the Self", code: "GEC-101", days: ["Mon"], startTime: "08:00", endTime: "09:00", room: "LR5", section: "ACT AD 1B", lateMinutes: 15, units: 3, instructor: "DR. ANNA CRUZ", semester: "1st Semester" },
+            { subject: "Human Computer Interaction", code: "HCI-102", days: ["Mon", "Thu"], startTime: "14:30", endTime: "16:00", room: "LR2", section: "ACT AD 1B", lateMinutes: 15, units: 3, instructor: "MARJORIE ROJAS", semester: "1st Semester" }
+        ];
+        localStorage.setItem('wmsu_schedule', JSON.stringify(masterSchedule));
+    }
+
+    users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+    
+    if (typeof renderUserTable === "function") renderUserTable();
+    if (typeof renderLogs === "function") renderLogs();
+    if (typeof renderDevices === "function") renderDevices();
+    if (typeof renderAttendanceTable === "function") renderAttendanceTable();
+    if (typeof renderScheduleTable === "function") renderScheduleTable();
+    if (typeof updateStats === "function") updateStats();
+    if (typeof renderSearchHistory === "function") renderSearchHistory();
+    if (typeof updateAnalytics === "function") updateAnalytics();
+    if (typeof renderAnnouncementsTable === "function") renderAnnouncementsTable();
+    
+    const form = document.getElementById("addUserForm");
+    if (form) form.onsubmit = handleAddUser;
+
+    const annForm = document.getElementById("addAnnouncementForm");
+    if (annForm) annForm.onsubmit = handleAddAnnouncement;
+
+    window.addEventListener('storage', (e) => {
+        if (['wmsu_attendance', 'wmsu_users', 'wmsu_logs', 'wmsu_devices', 'wmsu_schedule'].includes(e.key)) {
+            users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            if (typeof renderUserTable === "function") renderUserTable();
+            if (typeof renderAttendanceTable === "function") renderAttendanceTable();
+            if (typeof renderScheduleTable === "function") renderScheduleTable();
+            if (typeof renderLogs === "function") renderLogs();
+            if (typeof updateStats === "function") updateStats();
+            if (typeof updateAnalytics === "function") updateAnalytics();
+            if (typeof renderDevices === "function") renderDevices();
+
+            if (e.key === 'wmsu_attendance' && e.newValue) {
+                try {
+                    const attendance = JSON.parse(e.newValue);
+                    if (attendance.length > 0) {
+                        const latest = attendance[0];
+                        showAdminToast(`<strong style="color: var(--wmsu-red);">NEW SCAN DETECTED</strong><br><b>${latest.name}</b><br><small>${latest.subject} | ${latest.status}</small>`, latest.timestamp, latest.id);
+                    }
+                } catch (err) { console.error("Toast notification failed:", err); }
+            }
         }
-    }
-
-    const visualScanner = document.querySelector('.visual-scanner');
-    if (visualScanner) {
-        visualScanner.classList.toggle('maintenance-active', isMaintenanceMode);
-    }
-
-    const maintLogSection = document.getElementById('maintenance-log-section');
-    if (maintLogSection) {
-        maintLogSection.style.display = isMaintenanceMode ? 'block' : 'none';
-    }
-
-    const restoreBtn = document.getElementById('restore-btn');
-    if (restoreBtn) {
-        restoreBtn.style.display = isMaintenanceMode ? 'block' : 'none';
-    }
-
-    updateTerminalInfoGroup();
-    showToast(Maintenance Mode: ${isMaintenanceMode ? 'ACTIVATED' : 'DEACTIVATED'});
-    focusScanner();
-}
-
-function restoreSystemDefaults() {
-    if (confirm("SYSTEM OVERRIDE: This will purge all logs, attendance records, and reset the registry to factory defaults. Proceed?")) {
-        localStorage.clear();
-        showToast("SYSTEM RESTORED TO DEFAULT");
-        location.reload();
-    }
-}
-
-window.addEventListener('storage', (e) => {
-    if (['wmsu_users', 'wmsu_schedule', 'wmsu_attendance'].includes(e.key)) {
-        updateLiveClassDisplay();
-        updateTerminalInfoGroup();
-        updateScannerStats();
-    }
-});
-
-function playTerminalSound(type) {
-    const audio = new Audio();
-    if (type === 'success') audio.src = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3';
-    else if (type === 'error') audio.src = 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3';
-    audio.play().catch(() => {});
-}
-
-function focusScanner() {
-    const input = document.getElementById('rfid-input');
-    const isModalOpen = !!document.querySelector('.modal[style*="flex"]');
-    if (input && document.activeElement !== input && !isProcessingScan && !isModalOpen) {
-        input.focus();
-    }
-}
-
-function renderScannedSubjectDisplay(html) {
-    const liveDisplay = document.getElementById('scanned-subject-display');
-    if (liveDisplay) {
-        liveDisplay.innerHTML = html;
-    }
-}
-
-/**
- * Core Logic: Matches a User to the Master Schedule
- */
-function findUserScheduleMatch(user, schedule, day, time) {
-    const isFaculty = user.role === 'Faculty' || user.role === 'Teacher';
-    const isAdmin = user.role === 'Admin' || user.id.toLowerCase() === 'admin';
-
-    return schedule.find(s => {
-        const isTimeMatch = s.days.includes(day) && time >= s.startTime && time <= s.endTime;
-        if (!isTimeMatch) return false;
-        if (isAdmin || s.section === "ALL") return true;
-
-        if (isFaculty) {
-            const instructor = (s.instructor || '').toUpperCase();
-            const lastName = (user.lastName || (user.name ? user.name.split(',')[0] : user.id)).toUpperCase().trim();
-            return instructor.includes(lastName);
-        }
-
-        // Student Matching
-        const userSec = (user.section || '').toString().toUpperCase().trim();
-        const userCurr = (user.curriculum || '').toString().toUpperCase().replace(/[-\s]/g, '');
-        const schedTarget = (s.section || '').toString().toUpperCase().replace(/[-\s]/g, '');
-
-        const programMatch = userCurr !== "" && schedTarget.includes(userCurr);
-        const sectionMatch = userSec !== "" && schedTarget.includes(userSec);
-        return programMatch && sectionMatch;
     });
 }
 
-function updateScannedSubjectDisplayForUser(user, schedule, currentDay, currentTimeStr) {
-    const activeEntry = findUserScheduleMatch(user, schedule, currentDay, currentTimeStr);
-    
-    if (!activeEntry) {
-        renderScannedSubjectDisplay(<span style="color: rgba(255,255,255,0.6); font-weight: 700;">NO SCHEDULE FOUND</span><br><small>${(user.section || 'UNASSIGNED').toString().toUpperCase()}</small>);
-        return;
-    }
+function showAdminToast(msg, timestamp, userId) {
+    const toast = document.getElementById('admin-toast');
+    const content = document.getElementById('admin-toast-content');
+    if (toast && content) {
+        const btnHtml = `<button onclick="event.stopPropagation(); showUserDetails('${userId}'); document.getElementById('admin-toast').style.display='none';" style="margin-top: 10px; display: block; background: var(--wmsu-red); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);">VIEW PROFILE</button>`;
+        content.innerHTML = msg + btnHtml;
+        toast.style.display = 'flex';
+        toast.style.cursor = 'pointer';
 
-    const dayList = Array.isArray(activeEntry.days) ? activeEntry.days.join(', ') : activeEntry.days;
-    renderScannedSubjectDisplay(`
-        <span style="color: var(--wmsu-crimson); font-weight: 800;">ACTIVE SESSION: ${activeEntry.subject}</span><br>
-        <small>${activeEntry.startTime} - ${activeEntry.endTime} | ${activeEntry.room} | ${activeEntry.section}</small><br>
-        <small style="opacity: 0.75;">${dayList}</small>
-    `);
-}
-
-function updateScannerStats(latestId = null) {
-    const countEl = document.getElementById('session-scan-count');
-    const idEl = document.getElementById('latest-scan-id');
-    if (countEl) countEl.innerText = sessionScanCount;
-    if (idEl && latestId) {
-        idEl.innerText = latestId;
-    }
-}
-
-window.onclick = function(event) {
-    const logoutModal = document.getElementById('logoutModal');
-    const detailsModal = document.getElementById('studentDetailsModal');
-    
-    if (event.target === logoutModal) {
-        closeLogoutModal();
-    }
-    if (event.target === detailsModal) {
-        closeStudentDetailsModal();
-    }
-}
-
-function updateLiveClassDisplay() {
-    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
-    const now = new Date();
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const currentDay = dayNames[now.getDay()];
-    const currentTimeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-
-    // Show any active class in the terminal by default
-    const activeClass = schedule.find(s => 
-        (s.days && s.days.includes(currentDay)) && 
-        (currentTimeStr >= s.startTime && currentTimeStr <= s.endTime)
-    );
-    const liveDisplay = document.getElementById('scanned-subject-display');
-    
-    if (liveDisplay && !isProcessingScan) {
-        const oldContent = liveDisplay.innerHTML;
-        let newContent = '';
-
-        if (activeClass) {
-            const threshold = activeClass.lateMinutes || 15;
-            newContent = <span style="color: var(--wmsu-crimson); font-weight: 800;">ACTIVE SESSION: ${activeClass.subject}</span><br><small>${activeClass.startTime} - ${activeClass.endTime} | ${activeClass.room} | ${activeClass.section}</small>;
-            
-            const protocolList = document.getElementById('timing-protocol-list');
-            if (protocolList) {
-                protocolList.innerHTML = `
-                    <li><span>ON-TIME:</span> <strong>0-${threshold}m</strong></li>
-                    <li><span>LATE:</span> <strong>${threshold + 1}m+</strong></li>
-                `;
+        toast.onclick = () => {
+            const navBtn = document.getElementById('nav-attendance');
+            if (navBtn) navBtn.checked = true;
+            const dateFilter = document.getElementById('attendanceDateFilter');
+            if (dateFilter && dateFilter.value) {
+                dateFilter.value = '';
+                renderAttendanceTable();
             }
+            setTimeout(() => {
+                const row = document.getElementById(`attendance-row-${timestamp}`);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.style.transition = 'background 0.5s ease';
+                    row.style.background = 'rgba(158, 27, 50, 0.2)';
+                    setTimeout(() => { row.style.background = ''; }, 3000);
+                }
+            }, 150);
+
+            toast.style.display = 'none';
+        };
+        setTimeout(() => {
+            if (toast.style.display === 'flex') toast.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function openAnnouncementModal() {
+    document.getElementById('announcementModal').style.display = 'flex';
+}
+
+function closeAnnouncementModal() {
+    document.getElementById('announcementModal').style.display = 'none';
+}
+
+function handleAddAnnouncement(e) {
+    e.preventDefault();
+    const title = document.getElementById('annTitle').value.trim();
+    const content = document.getElementById('annContent').value.trim();
+    const expiry = document.getElementById('annExpiry').value;
+    
+    const announcements = JSON.parse(localStorage.getItem('wmsu_announcements')) || [];
+    announcements.unshift({
+        title,
+        content,
+        expiry,
+        pinned: false,
+        date: new Date().toISOString()
+    });
+    
+    localStorage.setItem('wmsu_announcements', JSON.stringify(announcements));
+    closeAnnouncementModal();
+    renderAnnouncementsTable();
+    addAdminLog('INFO', `Broadcast Sent: ${title}`);
+    this.reset();
+}
+
+function renderAnnouncementsTable() {
+    const announcements = JSON.parse(localStorage.getItem('wmsu_announcements')) || [];
+    const tbody = document.getElementById('adminAnnouncementsTable');
+    if (!tbody) return;
+
+    tbody.innerHTML = announcements.map((ann, idx) => `
+        <tr>
+            <td>${new Date(ann.date).toLocaleDateString()}</td>
+            <td><strong>${ann.title}</strong></td>
+            <td>${ann.content.substring(0, 60)}${ann.content.length > 60 ? '...' : ''}</td>
+            <td>
+                <button onclick="deleteAnnouncement(${idx})" style="background:none; border:none; color:#e53e3e; cursor:pointer; font-weight:bold;">Delete</button>
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No broadcast history found.</td></tr>';
+}
+
+function deleteAnnouncement(index) {
+    if (confirm("Permanently delete this announcement broadcast?")) {
+        const announcements = JSON.parse(localStorage.getItem('wmsu_announcements')) || [];
+        announcements.splice(index, 1);
+        localStorage.setItem('wmsu_announcements', JSON.stringify(announcements));
+        renderAnnouncementsTable();
+        addAdminLog('WARN', 'Announcement Broadcast Revoked');
+    }
+}
+
+function openModal() { 
+    const modal = document.getElementById("userModal");
+    const form = document.getElementById("addUserForm");
+    const title = document.querySelector('#userModal h2');
+    const submitBtn = document.querySelector('#userModal .btn-primary');
+
+    if (modal && form) {
+        form.reset();
+        editingUserId = null;
+        if (title) title.innerText = "Register New User";
+        if (submitBtn) submitBtn.innerText = "Confirm & Save User";
+        switchRegType('Student');
+        modal.style.display = "flex"; 
+    }
+}
+
+function editUser(id) {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+
+    editingUserId = id;
+    const modal = document.getElementById("userModal");
+    const form = document.getElementById("addUserForm");
+    const title = document.querySelector('#userModal h2');
+    const submitBtn = document.querySelector('#userModal .btn-primary');
+
+    if (modal && form) {
+        if (title) title.innerText = "Edit User Profile";
+        if (submitBtn) submitBtn.innerText = "Save Changes";
+        
+        switchRegType(user.role || 'Student');
+
+        document.getElementById("rfid").value = user.id;
+        const nameParts = user.name ? user.name.split(', ') : ["", ""];
+        const last = user.lastName || nameParts[0] || "";
+        const first = user.firstName || nameParts[1]?.split(' ')[0] || "";
+        const middle = user.middleName || (nameParts[1]?.split(' ').length > 1 ? nameParts[1].split(' ').slice(1).join(' ') : "");
+
+        document.getElementById("firstName").value = first;
+        document.getElementById("lastName").value = last;
+        document.getElementById("middleName").value = middle;
+        document.getElementById("gender").value = user.gender || "Male";
+        document.getElementById("dob").value = user.dob || "";
+        
+        if (user.role === 'Student') {
+            document.getElementById("yearLevel").value = user.year || "";
+            document.getElementById("section").value = user.section || "";
         } else {
-            newContent = <div class="no-schedule-alert" style="color: rgba(255,255,255,0.4); font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">NO CLASSES AT THIS TIME</div>;
-            const protocolList = document.getElementById('timing-protocol-list');
-            if (protocolList) {
-                protocolList.innerHTML = <li><span style="opacity: 0.5;">WAITING FOR SESSION...</span></li>;
-            }
+            document.getElementById("department").value = user.section || "";
         }
 
-        if (oldContent !== newContent) {
-            liveDisplay.classList.remove('animate-up');
-            void liveDisplay.offsetWidth; // Trigger reflow to restart animation
-            liveDisplay.innerHTML = newContent;
-            liveDisplay.classList.add('animate-up');
-        }
+        document.getElementById("email").value = user.email || "";
+        document.getElementById("mobile").value = user.mobile || "";
+        document.getElementById("emergencyName").value = user.emergencyName || "";
+        document.getElementById("emergencyNo").value = user.emergencyNo || "";
+        document.getElementById("address").value = user.address || "";
+        
+        if (typeof updateSubjectPreview === "function") updateSubjectPreview();
+        modal.style.display = "flex";
     }
 }
 
-/**
- * Appends an entry to the Cyber Audit Log HUD
- */
-function appendToEventLog(type, msg) {
-    const logList = document.getElementById('log-list');
-    if (!logList) return;
-    const time = new Date().toLocaleTimeString();
+function closeModal() { 
+    const modal = document.getElementById("userModal");
+    if (modal) modal.style.display = "none"; 
+}
 
-    // Determine badge color based on status type
-    let badgeColor = '#94a3b8'; // Default grey for unknown
-    if (type === 'PRESENT') badgeColor = '#38a169'; // Green
-    else if (type === 'LATE') badgeColor = '#d69e2e'; // Yellow/Gold
-    else if (type === 'TIMED OUT') badgeColor = '#4299e1'; // Blue
-    else if (type === 'NO SCHEDULE') badgeColor = '#dc143c'; // Crimson
-    else if (type === 'EMAIL') badgeColor = '#3182ce'; // Blue for notifications
-    else if (type === 'ADMIN ACCESS' || type === 'FACULTY ACCESS') badgeColor = '#4299e1'; // Blue for admin/faculty
-
-    const line = document.createElement('div');
-    line.style.padding = '12px 10px';
-    line.style.borderBottom = '1px solid var(--panel-border)';
-    line.style.fontSize = '0.9rem';
-    line.style.display = 'flex';
-    line.style.alignItems = 'center';
-    line.style.gap = '12px';
-    
-    line.innerHTML = `
-        <span style="color: var(--text-muted); font-family: monospace;">[${time}]</span>
-        <span style="background: ${badgeColor}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; min-width: 110px; text-align: center; letter-spacing: 0.5px; margin-right: 5px;">${type}</span>
-        <span style="color: var(--text-main); font-weight: 600;">${msg}</span>
-    `;
-    logList.prepend(line);
-
-    while (logList.children.length > 10) {
-        logList.lastChild.remove();
+function restoreSystemData() {
+    if(confirm("SYSTEM OVERRIDE: This will purge all users, logs, and current schedules, resetting the infrastructure to default factory state. Proceed?")) {
+        localStorage.clear(); 
+        initSystem(); 
+        location.reload(); 
     }
 }
 
-function addGlobalLog(type, message) {
-    const logs = JSON.parse(localStorage.getItem('wmsu_logs')) || [];
-    logs.unshift({ time: new Date().toLocaleTimeString(), type, message });
-    localStorage.setItem('wmsu_logs', JSON.stringify(logs.slice(0, 50)));
-    // Trigger storage event for other windows
-    localStorage.setItem('wmsu_log_trigger', Date.now());
-}
+function handleAddUser(e) {
+    if (e) e.preventDefault();
+    const rfidValue = document.getElementById("rfid")?.value.trim();
+    if (!rfidValue) return;
 
-function clearSessionLog() {
-    const logList = document.getElementById('log-list');
-    if (logList && confirm("Clear current session logs?")) {
-        logList.innerHTML = '';
-    }
-}
-
-function sendAttendanceEmailNotification(user, status, subject) {
-    // Only send emails for students
-    if (!user.email || user.email === 'N/A' || user.email === '') return;
-    
-    if (typeof emailjs === 'undefined') {
-        console.error("EmailJS SDK not found. Ensure the script tag is in your HTML.");
-        return;
-    }
-
-    const templateParams = {
-        to_email: user.email,
-        student_name: user.name || ${user.firstName} ${user.lastName},
-        status: status.toUpperCase(),
-        subject: subject,
-        timestamp: new Date().toLocaleString(),
-        excusal_link: "https://your-domain.com/ReviewExcuses.html"
+    const newUser = {
+        id: rfidValue,
+        firstName: document.getElementById("firstName").value.trim().toUpperCase(),
+        lastName: document.getElementById("lastName").value.trim().toUpperCase(),
+        middleName: (document.getElementById("middleName").value || "").trim().toUpperCase(),
+        role: activeRegType,
+        gender: document.getElementById("gender").value,
+        dob: document.getElementById("dob").value,
+        year: activeRegType === 'Student' ? (document.getElementById("yearLevel").value.toUpperCase() || "N/A") : "N/A",
+        section: activeRegType === 'Student' ? (document.getElementById("section").value.toUpperCase() || "N/A") : (document.getElementById("department").value.toUpperCase() || "N/A"),
+        curriculum: activeRegType === 'Student' ? document.getElementById("curriculum").value : "N/A",
+        semester: activeRegType === 'Student' ? document.getElementById("semester").value : "N/A",
+        academicYear: activeRegType === 'Student' ? (document.getElementById("academicYear").value || "2024-2025") : "N/A",
+        email: document.getElementById("email").value.trim(),
+        mobile: document.getElementById("mobile").value.trim() || "N/A",
+        emergencyName: document.getElementById("emergencyName").value.trim() || "N/A",
+        emergencyNo: document.getElementById("emergencyNo").value.trim() || "N/A",
+        address: document.getElementById("address").value.trim() || "N/A",
+        enrollDate: new Date().toLocaleDateString(),
+        status: "Active",
+        history: []
     };
 
-    emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
-        .then(() => {
-            appendToEventLog('EMAIL', Real-time alert sent to ${user.firstName});
+    newUser.name = `${newUser.lastName}, ${newUser.firstName} ${newUser.middleName}`.trim();
 
-            const logs = JSON.parse(localStorage.getItem('wmsu_logs')) || [];
-            logs.unshift({
-                time: new Date().toLocaleTimeString(),
-                type: 'INFO',
-                message: MAILER SUCCESS: [${user.id}] Email sent to ${user.email} (Status: ${status})
-            });
-            localStorage.setItem('wmsu_logs', JSON.stringify(logs.slice(0, 50)));
-            
-            console.log(%c[MAILER] Success: Sent to ${user.email}, 'color: #38a169; font-weight: bold;');
-        }, (error) => {
-            console.error('EmailJS ERROR:', error);
-            appendToEventLog('ERROR', Mail Dispatch Failed: ${error.text});
-        });
-}
-
-function showErrorFeedback(message) {
-    isProcessingScan = false;
-    playTerminalSound('error');
-    const statusLabel = document.getElementById('scanner-status-label');
-    const errorMsg = document.getElementById('error-msg');
-    const scannerBox = document.getElementById('scanner-box');
-    const loadingOverlay = document.getElementById('scanner-loading-overlay');
-    const mainApp = document.querySelector('.main-container') || document.body;
-    const input = document.getElementById('rfid-input');
-
-    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    let currentUsers = JSON.parse(localStorage.getItem('wmsu_users')) || [];
     
-    if (statusLabel) {
-        statusLabel.innerText = "INVALID ID";
-        statusLabel.style.color = "#ff4d4d";
-    }
-    if (scannerBox) {
-        scannerBox.style.boxShadow = "0 0 30px rgba(220, 20, 60, 0.5)";
-        scannerBox.classList.remove('shake');
-        void scannerBox.offsetWidth;
-        scannerBox.classList.add('shake');
-    }
-    if (errorMsg) {
-        errorMsg.innerText = message;
-        errorMsg.style.display = 'block';
+    if (editingUserId && editingUserId !== newUser.id) {
+        currentUsers = currentUsers.filter(u => u.id !== editingUserId);
     }
 
-    mainApp.classList.add('access-denied-flash');
-
-    setTimeout(() => {
-        if (statusLabel) statusLabel.innerText = "AWAITING ID TAG";
-        if (statusLabel) statusLabel.style.color = ""; 
-        if (scannerBox) {
-            scannerBox.style.boxShadow = "";
-            scannerBox.classList.remove('shake');
-        }
-        if (errorMsg) errorMsg.style.display = 'none';
-        if (input) {
-            mainApp.classList.remove('access-denied-flash');
-            input.value = '';
-            input.focus();
-        }
-    }, 2000);
+    const existingIdx = currentUsers.findIndex(u => u.id === newUser.id);
+    if (existingIdx > -1) currentUsers[existingIdx] = newUser; 
+    else currentUsers.push(newUser); 
+    localStorage.setItem('wmsu_users', JSON.stringify(currentUsers));
+    
+    users = currentUsers; 
+    editingUserId = null;
+    initSystem(); 
+    closeModal(); 
 }
 
-function processScan(val) {
-    if (isProcessingScan || !val || val.trim() === "") {
-        focusScanner();
+function renderUserTable() {
+    const tbody = document.getElementById("adminUserTable");
+    if (!tbody) return;
+    
+    const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    tbody.innerHTML = users.map(u => {
+        const fullName = u.name || `${u.lastName}, ${u.firstName} ${u.middleName || ''}`.trim();
+        const classInfo = u.role === 'Student' ? `${u.year || 'N/A'}-${u.section || 'N/A'}` : (u.section || 'N/A');
+        const academicYear = u.academicYear || 'N/A';
+
+        let weeklyPercent = "0%";
+        if (u.role === 'Student') {
+            const userSection = (u.section || "").toUpperCase();
+            const expectedSessions = schedule
+                .filter(s => {
+                    const schedSec = s.section.toUpperCase();
+                    return schedSec === userSection || schedSec.includes(`${userSection}`) || schedSec.startsWith(`${userSection}`) || s.section === "ALL";
+                })
+                .reduce((acc, s) => acc + (s.days ? s.days.length : 0), 0);
+
+            const userWeekLogs = attendance.filter(a => a.id === u.id && a.timestamp >= weekStart.getTime());
+            const uniqueAttended = new Set(userWeekLogs.map(l => l.subject + new Date(l.timestamp).toDateString())).size;
+
+            if (expectedSessions > 0) {
+                const calc = Math.min(100, Math.round((uniqueAttended / expectedSessions) * 100));
+                const color = calc >= 80 ? '#38a169' : (calc >= 50 ? '#d69e2e' : '#e53e3e');
+                weeklyPercent = `<span style="color: ${color}; font-weight: 800;">${calc}%</span>`;
+            }
+        }
+
+        return `
+        <tr onclick="showUserDetails('${u.id}')">
+            <td>${u.id}</td>
+            <td>${fullName}</td>
+            <td>${u.role || 'Student'}</td>
+            <td>${u.gender || 'N/A'}</td>
+            <td>${classInfo} <br> <small>Weekly: ${weeklyPercent}</small></td>
+            <td>${academicYear}</td>
+            <td>${u.enrollDate || 'Jan 12, 2024'}</td>
+            <td>${u.status || 'Active'}</td>
+            <td>
+                <button onclick="event.stopPropagation(); editUser('${u.id}')" style="background:none; border:none; color:#4a5568; cursor:pointer; font-weight:bold; margin-right:8px;">Edit</button>
+                <button onclick="event.stopPropagation(); deleteUser('${u.id}')" style="background:none; border:none; color:#e53e3e; cursor:pointer; font-weight:bold;">Delete</button>
+            </td>
+        </tr>
+    `}).join('');
+}
+
+function deleteUser(id) {
+    if (confirm(`Permanently remove ID Number: ${id} from registry?`)) {
+        let updatedUsers = users.filter(u => u.id !== id);
+        localStorage.setItem('wmsu_users', JSON.stringify(updatedUsers));
+        
+        addAdminLog('WARN', `User Removed: ${id}`); 
+        users = updatedUsers; 
+        renderUserTable(); 
+        updateStats(); 
+    }
+}
+
+function updateStats() {
+    const total = users.length;
+    const students = users.filter(u => !u.role || u.role === 'Student').length;
+    const faculty = users.filter(u => u.role === 'Faculty' || u.role === 'Teacher').length;
+    
+    const countEl = document.getElementById('active-users-count');
+    const subEl = document.getElementById('active-users-sub');
+    
+    if (countEl) countEl.innerText = total.toLocaleString();
+    if (subEl) {
+        subEl.innerHTML = `<span onclick="navigateToUsers('Student')" style="cursor:pointer; text-decoration:underline; color: var(--wmsu-red); font-weight: 700;">${students.toLocaleString()} Students</span> | <span onclick="navigateToUsers('Faculty')" style="cursor:pointer; text-decoration:underline; color: #4338ca; font-weight: 700;">${faculty.toLocaleString()} Faculty</span>`;
+    }
+}
+
+function addAdminLog(type, message) {
+    const logs = JSON.parse(localStorage.getItem('wmsu_logs')) || [];
+    logs.unshift({
+        time: new Date().toLocaleTimeString(),
+        type: type,
+        message: message
+    });
+    localStorage.setItem('wmsu_logs', JSON.stringify(logs.slice(0, 50)));
+    renderLogs(); 
+}
+
+function navigateToUsers(role) {
+    document.getElementById('nav-users').checked = true;
+    document.getElementById('userSearch').value = role;
+    if (typeof saveSearchTerm === "function") saveSearchTerm(role);
+    if (typeof filterUsers === "function") filterUsers();
+}
+
+let activeLogFilter = 'All';
+
+function filterLogs(type, btn) {
+    activeLogFilter = type;
+    renderLogs(type, btn);
+}
+
+function renderLogs(filter = activeLogFilter, btn = null) {
+    if (btn) {
+        document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    const logs = JSON.parse(localStorage.getItem('wmsu_logs')) || [];
+    const container = document.getElementById('system-log-container');
+    if (!container) return;
+
+    const searchInput = document.getElementById('logSearch');
+    const keyword = searchInput ? searchInput.value.trim().toUpperCase() : '';
+
+    let filtered = filter === 'All' ? logs : logs.filter(l => l.type === filter);
+    
+    if (keyword) {
+        filtered = filtered.filter(l => 
+            l.message.toUpperCase().includes(keyword) || 
+            l.type.toUpperCase().includes(keyword) || 
+            l.time.toUpperCase().includes(keyword)
+        );
+    }
+    
+    container.innerHTML = filtered.map(l => {
+        const cls = l.type === 'ERROR' ? 'error' : (l.type === 'WARN' ? 'warn' : 'info');
+        
+        let msg = l.message;
+        let typeText = l.type;
+        let timeText = l.time;
+
+        if (keyword && typeof highlightResult === "function") {
+            msg = highlightResult(msg, keyword);
+            typeText = highlightResult(typeText, keyword);
+            timeText = highlightResult(timeText, keyword);
+        }
+
+        return `<div class="log-entry ${cls}"><span class="log-time">[${timeText}]</span> <span style="color: ${l.type==='ERROR'?'#e53e3e':(l.type==='WARN'?'#f6ad55':'#48bb78')}">${typeText}:</span> ${msg}</div>`;
+    }).join('') || '<div style="padding: 20px; color: #718096;">No logs matching criteria.</div>';
+}
+
+function openInfraModal(type) {
+    if (type === 'user') {
+        document.getElementById('active-users-sub-modal').innerText = document.getElementById('active-users-sub').innerText;
+        document.getElementById('infraUserModal').style.display = 'flex';
+    } else if (type === 'hardware') {
+        renderDevices('device-grid-container-modal');
+        document.getElementById('infraHardwareModal').style.display = 'flex';
+    } else if (type === 'network') {
+        document.getElementById('infraNetworkModal').style.display = 'flex';
+    }
+}
+
+function closeInfraModal(type) {
+    const id = 'infra' + type.charAt(0).toUpperCase() + type.slice(1) + 'Modal';
+    document.getElementById(id).style.display = 'none';
+}
+
+function renderDevices(targetId = 'device-grid-container') {
+    const devices = JSON.parse(localStorage.getItem('wmsu_devices')) || [];
+    const container = document.getElementById(targetId);
+    if (!container) return;
+
+    container.innerHTML = devices.map(d => `
+        <div class="device-card">
+            <div style="display: flex; justify-content: space-between;">
+                <h3 style="font-size: 1rem;">${d.name}</h3>
+                <span class="badge ${d.type === 'Master' ? 'present' : 'late'}">${d.type}</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #718096; margin-top: 5px;">UID: ${d.id} | Model: WMSU-R2</p>
+            <div class="device-status">
+                <div class="status-dot ${d.status === 'Online' ? 'dot-online' : 'dot-offline'}"></div>
+                <span style="color: ${d.status === 'Online' ? '#38a169' : '#e53e3e'}; font-weight: bold;">${d.status.toUpperCase()}</span>
+                <span style="margin-left: auto; color: #a0aec0;">${d.status === 'Online' ? 'Last ping: 2s ago' : 'Connection Lost'}</span>
+            </div>
+            <div class="device-meta">
+                <div class="meta-item">IP: <b>${d.ip}</b></div>
+                <div class="meta-item">Uptime: <b>${d.uptime}</b></div>
+                <div class="meta-item">Signal: <b>${d.signal}</b></div>
+                <div class="meta-item">Version: <b>${d.version}</b></div>
+            </div>
+            ${d.status === 'Offline' ? `<button class="btn btn-primary" style="width: 100%; margin-top: 15px; font-size: 0.8rem;" onclick="rebootDevice('${d.id}')">Reboot Hardware</button>` : ''}
+        </div>
+    `).join('');
+}
+
+function rebootDevice(id) {
+    const devices = JSON.parse(localStorage.getItem('wmsu_devices')) || [];
+    const idx = devices.findIndex(d => d.id === id);
+    if(idx > -1) {
+        devices[idx].status = 'Online';
+        devices[idx].uptime = '0s';
+        localStorage.setItem('wmsu_devices', JSON.stringify(devices));
+        addAdminLog('INFO', `Hardware Node Rebooted: ${id}`);
+        renderDevices();
+        updateStats();
+    }
+}
+
+function exportLogsCSV() {
+    const logs = JSON.parse(localStorage.getItem('wmsu_logs')) || [];
+    const csvContent = "data:text/csv;charset=utf-8," + "Time,Type,Message\n" + logs.map(l => `${l.time},${l.type},"${l.message}"`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "system_audit_logs.csv");
+    document.body.appendChild(link);
+    link.click();
+}
+
+function renderAttendanceTable() {
+    const tbody = document.getElementById("attendanceTableBody");
+    if (!tbody) return;
+    
+    const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+    const dateFilter = document.getElementById("attendanceDateFilter").value;
+    
+    const filtered = attendance.filter(a => {
+        if (!dateFilter) return true;
+        return new Date(a.timestamp).toISOString().split('T')[0] === dateFilter;
+    });
+
+    tbody.innerHTML = filtered.map(a => `
+        <tr id="attendance-row-${a.timestamp}">
+            <td>
+                <div style="font-weight:700;">IN: ${new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                ${a.timeOut ? `<div style="color:var(--wmsu-red); font-size:0.75rem;">OUT: ${new Date(a.timeOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>` : '<div style="color:#718096; font-size:0.7rem;">(Active)</div>'}
+            </td>
+            <td>${a.name}</td>
+            <td>${a.id}</td>
+            <td>${a.subject}</td>
+            <td>
+                <span class="badge ${a.status.toLowerCase()}">${a.status}</span>
+                ${a.timeOut ? '<br><small style="color:#38a169; font-weight:800;">Completed</small>' : ''}
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 20px;">No attendance records found for this date.</td></tr>';
+    
+    const today = new Date().toISOString().split('T')[0];
+    const todayCount = attendance.filter(a => new Date(a.timestamp).toISOString().split('T')[0] === today).length;
+    const statEl = document.getElementById('today-attendance-stat');
+    if(statEl) statEl.innerText = todayCount;
+}
+
+function exportAttendanceCSV() {
+    const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+    if (attendance.length === 0) { alert("No attendance records found."); return; }
+
+    const headers = "Timestamp,Name,ID,Subject,Status\n";
+    const csvContent = attendance.map(a => 
+        `"${new Date(a.timestamp).toLocaleString()}", "${a.name}", "${a.id}", "${a.subject}", "${a.status}"`
+    ).join("\n");
+
+    const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+}
+
+function exportWeeklyReportCSV() {
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    
+    const headers = "Student ID,Name,Section,Expected Sessions,Actual Attended,Attendance Rate\n";
+    const csvData = users.filter(u => u.role === 'Student').map(u => {
+        const userSection = (u.section || "").toUpperCase();
+        const expected = schedule
+            .filter(s => s.section.toUpperCase().includes(userSection) || s.section === "ALL")
+            .reduce((acc, s) => acc + (s.days ? s.days.length : 0), 0);
+        
+        const userWeekLogs = attendance.filter(a => a.id === u.id && a.timestamp >= weekStart.getTime());
+        const attended = new Set(userWeekLogs.map(l => l.subject + new Date(l.timestamp).toDateString())).size;
+        const rate = expected > 0 ? Math.round((attended / expected) * 100) : 0;
+        
+        return `"${u.id}","${u.name}","${userSection}",${expected},${attended},"${rate}%"`;
+    }).join("\n");
+
+    const blob = new Blob([headers + csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Weekly_Attendance_Analysis_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    addAdminLog('INFO', 'Weekly Analytical Report generated.');
+}
+
+function exportScheduleCSV() {
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    if (schedule.length === 0) { alert("No schedule records found to export."); return; }
+
+    const headers = "Subject,Code,Days,StartTime,EndTime,Room,Section,LateMinutes,Units,Instructor\n";
+    const csvContent = schedule.map(s => 
+        `"${s.subject}",${s.code},"${s.days.join('; ')}",${s.startTime},${s.endTime},${s.room},"${s.section}",${s.lateMinutes},${s.units},"${s.instructor || 'TBD'}"`
+    ).join("\n");
+
+    const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `WMSU_Master_Schedule_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    addAdminLog('INFO', 'Master Schedule exported to CSV file.');
+}
+
+function openBulkModal() { document.getElementById('bulkUserModal').style.display = 'flex'; }
+function closeBulkModal() { document.getElementById('bulkUserModal').style.display = 'none'; }
+const metadata = {
+        curriculum: document.getElementById('bulkCurriculum').value,
+        section: document.getElementById('bulkSection').value.trim().toUpperCase(),
+        semester: document.getElementById('bulkSemester').value,
+        academicYear: document.getElementById('bulkAY').value.trim()
+    };
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        let currentUsers = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+        let addedCount = 0;
+
+        lines.forEach((line, index) => {
+            if (index === 0 || !line.trim()) return; // Skip header or empty lines
+            const cols = line.split(',').map(c => c.trim());
+            
+            if (cols.length >= 3) { // Minimum requirement: ID, LastName, FirstName
+                let rawId = cols[0].replace(/[^\w-]/g, '');
+                if (/^[0-9]{9}$/.test(rawId)) rawId = rawId.substring(0, 4) + '-' + rawId.substring(4);
+
+                const newUser = {
+                    id: rawId,
+                    lastName: cols[1].replace(/[^a-zA-Z\s.]/g, ''),
+                    firstName: cols[2].replace(/[^a-zA-Z\s.]/g, ''),
+                    middleName: (cols[3] || "").replace(/[^a-zA-Z\s.]/g, ''),
+                    gender: cols[4] || "N/A",
+                    dob: cols[5] || "N/A",
+                    email: cols[6] || "N/A",
+                    mobile: cols[7] || "N/A",
+                    role: "Student",
+                    status: "Active",
+                    enrollDate: new Date().toLocaleDateString(),
+                    ...metadata,
+                    history: []
+                };
+                newUser.name = `${newUser.lastName}, ${newUser.firstName} ${newUser.middleName}`.trim();
+
+                const existingIdx = currentUsers.findIndex(u => u.id === newUser.id);
+                if (existingIdx > -1) currentUsers[existingIdx] = newUser;
+                else currentUsers.push(newUser);
+                addedCount++;
+            }
+        });
+
+        localStorage.setItem('wmsu_users', JSON.stringify(currentUsers));
+        users = currentUsers;
+        renderUserTable();
+        updateStats();
+        addAdminLog('INFO', `Bulk Enrollment Complete: ${addedCount} students registered to ${metadata.curriculum} ${metadata.section}`);
+        closeBulkModal();
+        alert(`Successfully enrolled ${addedCount} students.`);
+    };
+    reader.readAsText(fileInput.files[0]);
+
+function filterUsers() {
+    const input = document.getElementById('userSearch');
+    const filter = (input.value || "").trim().toUpperCase();
+    const table = document.getElementById('adminUserTable');
+    if (!table) return;
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < tr.length; i++) {
+        const cellId = tr[i].getElementsByTagName('td')[0];
+        const cellName = tr[i].getElementsByTagName('td')[1];
+        const cellRole = tr[i].getElementsByTagName('td')[2];
+        if (!cellId || !cellName || !cellRole) continue;
+
+        // Reset to original text before re-evaluating highlights
+        const rawId = cellId.textContent;
+        const rawName = cellName.textContent;
+        const rawRole = cellRole.textContent;
+        cellId.innerHTML = rawId;
+        cellName.innerHTML = rawName;
+        cellRole.innerHTML = rawRole;
+
+        if (filter === "") {
+            tr[i].style.display = "";
+            continue;
+        }
+
+        const idText = rawId.toUpperCase();
+        const nameText = rawName.toUpperCase();
+        const roleText = rawRole.toUpperCase();
+
+        // Try exact substring match across ID, Name, and Role first
+        const exactMatch = (idText + " " + nameText + " " + roleText).includes(filter);
+        let fuzzyMatch = false;
+
+        // Fuzzy matching logic for names (allows 1 minor spelling mistake for terms of 3+ chars)
+        if (!exactMatch && filter.length >= 3) {
+            const nameWords = nameText.split(/[\s,.]+/).filter(w => w.length >= 3);
+            for (const word of nameWords) {
+                const prefix = word.substring(0, filter.length);
+                if (levenshteinDistance(prefix, filter) <= 1) {
+                    fuzzyMatch = true;
+                    break;
+                }
+            }
+        }
+        
+        if (exactMatch || fuzzyMatch) {
+            tr[i].style.display = "";
+            cellId.innerHTML = highlightResult(rawId, filter);
+            cellName.innerHTML = highlightResult(rawName, filter);
+            cellRole.innerHTML = highlightResult(rawRole, filter);
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+
+    // Debounced search history saving
+    clearTimeout(searchTimeout);
+    const term = input.value.trim();
+    if (term.length > 2) {
+        searchTimeout = setTimeout(() => saveSearchTerm(term), 1500);
+    }
+}
+
+function highlightResult(text, term) {
+    if (!term || term.trim() === "") return text;
+    const termUpper = term.toUpperCase();
+    const textUpper = text.toUpperCase();
+
+    if (textUpper.includes(termUpper)) {
+        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+        return text.replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    if (term.length >= 3) {
+        const words = text.split(/([\s,.]+)/);
+        return words.map(word => {
+            const wordUpper = word.toUpperCase();
+            if (word.length >= 3 && levenshteinDistance(wordUpper.substring(0, term.length), termUpper) <= 1) {
+                return `<span class="highlight">${word}</span>`;
+            }
+            return word;
+        }).join('');
+    }
+    return text;
+}
+
+function levenshteinDistance(s1, s2) {
+    const len1 = s1.length;
+    const len2 = s2.length;
+    const matrix = Array.from({ length: len1 + 1 }, () => Array(len2 + 1).fill(0));
+    for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+    for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+            const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+        }
+    }
+    return matrix[len1][len2];
+}
+
+function updateSubjectPreview() {
+    const curriculum = document.getElementById("curriculum").value;
+    const academicYear = document.getElementById("academicYear").value || "2024-2025";
+    const semester = document.getElementById("semester").value;
+    const previewArea = document.getElementById("subject-list-preview");
+    if(!previewArea) return;
+    
+    const programMapping = {
+        "ACT-AD": {
+            "2024-2025": {
+                "1st Semester": ["Life and Works of Rizal", "PATHFIT-1","PURCOM-1", "Introduction to Computing Lec", "Introduction to Computing Lab", "CC-101 Lec", "CC-101 Lab","DS-118"],
+                "2nd Semester": ["STS-101", "HCI-102", "WD-101", "OOP-101","RIPH-101","PATHFIT-2", "CC-102","DS-119"],
+                "Summer": []
+            },
+            "2025-2026": {
+                "1st Semester": ["RIPH-101", "GEC-101", "PATHFIT-1", "CC-101", "CC-102", "DS-118"],
+                "2nd Semester": ["GEC-102", "PURCOM-1", "STS-101", "HCI-102", "WD-101", "OOP-101"],
+                "Summer": []
+            }
+        },
+        "ACT-NT": {
+            "2024-2025": {
+                "1st Semester": ["RIPH-101", "GEC-101", "PATHFIT-1", "CC-101", "CC-102", "DS-118"],
+                "2nd Semester": ["GEC-102", "PURCOM-1", "STS-101", "HCI-102", "NET-101", "SYS-ADM", "CYBER-1"],
+                "Summer": []
+            },
+            "2025-2026": {
+                "1st Semester": ["RIPH-101", "GEC-101", "PATHFIT-1", "CC-101", "CC-102", "DS-118"],
+                "2nd Semester": ["GEC-102", "PURCOM-1", "STS-101", "HCI-102", "NET-101", "SYS-ADM", "CYBER-1"],
+                "Summer": []
+            }
+        },
+        "CS": {
+            "2024-2025": {
+                "1st Semester": ["Life and Works of Rizal", "PATHFIT-1","PURCOM-1", "Introduction to Computing Lec", "Introduction to Computing Lab", "CC-101 Lec", "CC-101 Lab","DS-118"],
+                "2nd Semester": ["STS-101", "HCI-102", "WD-101", "OOP-101","RIPH-101","PATHFIT-2", "CC-102","DS-119"],
+                "Summer": []
+            },
+            "2025-2026": {
+                "1st Semester": ["RIPH-101", "GEC-101", "PATHFIT-1", "CS-101", "CC-102", "DS-118", "CS-111"],
+                "2nd Semester": ["GEC-102", "PURCOM-1", "STS-101", "HCI-102", "ALGO-1", "DBMS-1", "CS-102", "SOFT-ENG"],
+                "Summer": []
+            }
+        },
+        "IT": {
+            "2024-2025": {
+                "1st Semester": ["RIPH-101", "GEC-101", "PATHFIT-1", "IT-101", "CC-102", "DS-118"],
+                "2nd Semester": ["GEC-102", "PURCOM-1", "STS-101", "HCI-102", "NET-1", "SYS-INT", "MOBILE-DEV", "WEB-SEC"],
+                "Summer": []
+            },
+            "2025-2026": {
+                "1st Semester": ["RIPH-101", "GEC-101", "PATHFIT-1", "IT-101", "CC-102", "DS-118"],
+                "2nd Semester": ["GEC-102", "PURCOM-1", "STS-101", "HCI-102", "NET-1", "SYS-INT", "MOBILE-DEV", "WEB-SEC"],
+                "Summer": []
+            }
+        }
+    };
+
+    let subjects = [];
+    const yearMap = programMapping[curriculum] ? (programMapping[curriculum][academicYear] || programMapping[curriculum]["2024-2025"]) : null;
+    if (yearMap) {
+        subjects = yearMap[semester] || [];
+    }
+    
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    const subjectLookup = new Map(schedule.map(s => [s.code, s.subject]));
+
+    previewArea.innerHTML = subjects.map(code => {
+        const displayTitle = subjectLookup.get(code) || code;
+        return `<span style="background: white; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--wmsu-red); white-space: nowrap;">
+            ${displayTitle}
+        </span>`;
+    }).join('') || `<span style="font-size:0.7rem; color:var(--text-muted);">Enter section (e.g. 1B) to preview subjects...</span>`;
+}
+
+function updateAnalytics() {
+    const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+    const usersList = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+    const total = usersList.length;
+    if (total === 0) return;
+
+    const today = new Date().toDateString();
+    const presentToday = new Set(attendance.filter(a => new Date(a.timestamp).toDateString() === today).map(a => a.id)).size;
+    const lateToday = attendance.filter(a => new Date(a.timestamp).toDateString() === today && a.status === 'LATE').length;
+    const absentToday = Math.max(0, total - presentToday);
+
+    const p = Math.round((presentToday/total)*100);
+    const l = Math.round((lateToday/total)*100);
+    const a = 100 - p - l;
+
+    const pie = document.querySelector('.pie-graph');
+    if(pie) {
+        pie.style.setProperty('--present', p + '%');
+        pie.style.setProperty('--late', l + '%');
+        pie.style.setProperty('--absent', Math.max(0, a) + '%');
+    }
+    
+    // Update Terminal Health bar
+    const devCount = (JSON.parse(localStorage.getItem('wmsu_devices')) || []).length;
+    const onlineDev = (JSON.parse(localStorage.getItem('wmsu_devices')) || []).filter(d => d.status === 'Online').length;
+    const health = devCount > 0 ? (onlineDev / devCount) * 100 : 0;
+    const healthBar = document.querySelector('.stat-card:nth-child(2) .health-meter div');
+    if (healthBar) healthBar.style.width = health + '%';
+}
+
+function getFacultySchedule(facultyId) {
+    const usersList = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    
+    const faculty = usersList.find(u => u.id === facultyId);
+    if (!faculty) return [];
+
+    return schedule.filter(s => {
+        const instructorMatch = s.instructor.toUpperCase().includes(faculty.lastName.toUpperCase()) || 
+                                s.instructor.toUpperCase() === (faculty.name || '').toUpperCase();
+        return instructorMatch;
+    });
+}
+
+// ─────────────────────────────────────────────────────────
+// SCHEDULE MANAGER
+// ─────────────────────────────────────────────────────────
+let editingScheduleIdx = null;
+
+function renderScheduleTable() {
+    const tbody = document.getElementById('scheduleTableBody');
+    if (!tbody) return;
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+
+    if (schedule.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-muted);">No schedules found. Click "+ Add Schedule" to create one.</td></tr>';
         return;
     }
 
-    const statusLabel = document.getElementById('scanner-status-label');
-    const inputField = document.getElementById('rfid-input');
-    const scannerBox = document.getElementById('scanner-box');
-    const successCard = document.getElementById('success-card');
-    const loadingOverlay = document.getElementById('scanner-loading-overlay');
-    const liveLog = document.getElementById('live-log');
+    tbody.innerHTML = schedule.map((s, idx) => {
+        const days = Array.isArray(s.days) ? s.days.join(', ') : s.days;
+        return `
+        <tr onclick="editSchedule(${idx})" style="cursor: pointer;">
+            <td><strong>${s.subject}</strong><br><small style="color:var(--text-muted);">${s.code || ''}</small></td>
+            <td>${s.section}</td>
+            <td>${days}</td>
+            <td>${s.startTime} – ${s.endTime}<br><small style="color:var(--text-muted);">Late: ${s.lateMinutes || 15}min</small></td>
+            <td>${s.room || '—'}</td>
+            <td>${s.instructor || 'TBD'}</td>
+            <td>${s.semester || '—'}</td>
+            <td>
+                <button onclick="event.stopPropagation(); editSchedule(${idx})" style="background:none;border:none;color:#4a5568;cursor:pointer;font-weight:bold;margin-right:8px;">Edit</button>
+                <button onclick="event.stopPropagation(); deleteSchedule(${idx})" style="background:none;border:none;color:#e53e3e;cursor:pointer;font-weight:bold;">Delete</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
 
-    let scanVal = val.trim();
-    const digitsOnly = scanVal.replace(/\D/g, '');
-    if (digitsOnly.length === 9) scanVal = digitsOnly.substring(0, 4) + '-' + digitsOnly.substring(4);
-    if (digitsOnly.length >= 7 && !scanVal.includes('-')) scanVal = digitsOnly.substring(0, 4) + '-' + digitsOnly.substring(4);
-    scanVal = scanVal.replace(/[^\w-]/g, '');
+function handleSubjectSelect(val) {
+    const codeInput = document.getElementById('sched-code');
+    if (val === 'custom') {
+        const customName = prompt("Enter Custom Subject Name:");
+        if (customName) {
+            const opt = document.createElement('option');
+            opt.value = customName;
+            opt.text = customName;
+            document.getElementById('sched-subject').add(opt, 1);
+            document.getElementById('sched-subject').value = customName;
+            codeInput.value = '';
+            codeInput.focus();
+        }
+        return;
+    }
+    const match = SUBJECT_CATALOG.find(s => s.name === val);
+    if (match) codeInput.value = match.code;
+}
 
-    if (inputField) inputField.value = '';
-    if (statusLabel) statusLabel.innerText = IDENTIFYING: ${scanVal};
-    if (loadingOverlay) loadingOverlay.style.display = 'flex';
-    isProcessingScan = true;
+function openScheduleModal(idx = null) {
+    editingScheduleIdx = idx;
+    const modal = document.getElementById('scheduleModal');
+    const title = document.getElementById('schedModalTitle');
+    if (!modal) return;
 
-    setTimeout(() => {
-    try {
-        const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+    const subSelect = document.getElementById('sched-subject');
+    subSelect.innerHTML = '<option value="">-- Pick Subject --</option>' + 
+        SUBJECT_CATALOG.map(s => `<option value="${s.name}">${s.name}</option>`).join('') +
+        '<option value="custom">Other / Custom Subject...</option>';
+
+    document.getElementById('sched-code').value = '';
+    document.getElementById('sched-instructor').value = '';
+    document.getElementById('sched-section').value = '';
+    document.getElementById('sched-start').value = '';
+    document.getElementById('sched-end').value = '';
+    document.getElementById('sched-room').value = '';
+    document.getElementById('sched-late').value = '15';
+    document.getElementById('sched-semester').value = '1st Semester';
+    document.querySelectorAll('.sched-day-cb').forEach(cb => cb.checked = false);
+
+    if (idx !== null) {
         const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
-
-        // Robust format-agnostic search: Strips hyphens/spaces for comparison
-        const normalize = (id) => (id || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
-        const normalizedScan = normalize(scanVal);
-        const user = users.find(u => normalize(u.id) === normalizedScan);
-        
-        const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
-
-        if (!user) {
-            showErrorFeedback(NOT RECOGNIZED: ID "${scanVal}" was not found in the local registry.);
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
-            return;
-        }
-
-        const now = new Date();
-        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const currentDay = dayNames[now.getDay()];
-        const currentTimeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        const isAdmin = user.role === 'Admin' || user.id.toLowerCase() === 'admin';
-        const isFaculty = user.role === 'Faculty' || user.role === 'Teacher';
-
-        let activeClass = null;
-        let subjectId = 'N/A';
-        let subjectName = 'NO SCHEDULED CLASS';
-        let status = "Present";
-        let statusColor = "#38a169";
-
-        if (isAdmin) {
-            subjectId = 'ADMIN ACCESS';
-            subjectName = 'ADMIN ACCESS';
-            status = 'Authorized';
-            statusColor = '#3182ce';
-        } else if (isFaculty) {
-            subjectId = 'FACULTY ACCESS';
-            subjectName = 'FACULTY ACCESS';
-            status = 'Authorized';
-            statusColor = '#4299e1';
-        } else {
-            activeClass = findUserScheduleMatch(user, schedule, currentDay, currentTimeStr);
-            subjectId = activeClass ? activeClass.subject : 'N/A';
-            if (activeClass) {
-                subjectName = activeClass.subject;
-                const threshold = activeClass.lateMinutes || 15;
-                const [sHours, sMinutes] = activeClass.startTime.split(':').map(Number);
-                const startTimeDate = new Date(now);
-                startTimeDate.setHours(sHours, sMinutes, 0, 0);
-                const diffInMinutes = (now - startTimeDate) / (1000 * 60);
-    
-                if (diffInMinutes > threshold) {
-                    status = "Late";
-                    statusColor = "#d69e2e";
-                }
-            } else {
-                status = "No Schedule";
-                statusColor = "#dc143c";
-                subjectName = "NO SCHEDULED CLASS";
-            }
-        }
-
-        // Time In/Out Logic: Toggle based on existing record for the same day
-        const todayStr = now.toDateString();
-        const existingIdx = attendance.findIndex(a => a.id === user.id && a.subject === (subjectName || subjectId) && new Date(a.timestamp).toDateString() === todayStr);
-        
-        let isTimeOut = false;
-        if (existingIdx !== -1) {
-            const record = attendance[existingIdx];
-            if (record.timeOut) {
-                showToast("SESSION ALREADY COMPLETED");
-                isProcessingScan = false;
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                focusScanner();
-                return;
-            }
-            // 60-second buffer to prevent accidental double-tap
-            if ((now.getTime() - record.timestamp) < 60000) {
-                showToast("ALREADY TIMED IN (WAIT 1M TO OUT)");
-                isProcessingScan = false;
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                focusScanner();
-                return;
-            }
-            isTimeOut = true;
-        }
-
-        if (isMaintenanceMode) {
-            statusLabel.innerText = "";
-        }
-
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
-
-        const studentDisplayName = user.name || ${user.lastName || ''}, ${user.firstName || ''}.trim() || user.id;
-
-        if (successCard) {
-            const subjDisplay = document.getElementById('success-subject-display');
-            const nameEl = successCard.querySelector('.student-name');
-            const idEl = successCard.querySelector('.student-id-display');
-            const badge = successCard.querySelector('.status-badge-reveal');
-            const photoEl = document.getElementById('student-photo');
-            const cardLabel = document.getElementById('card-label');
-
-            if (subjDisplay) subjDisplay.innerText = subjectName.toUpperCase();
-            if (nameEl) nameEl.innerText = studentDisplayName;
-            if (cardLabel) cardLabel.innerText = "AUTHENTICATION SUCCESS";
-            
-            if (idEl) {
-                idEl.innerText = ID: ${user.id};
-            }
-
-            const yrSecEl = document.getElementById('student-year-section');
-            if (yrSecEl) {
-                const yrLabel = (user.year || '').includes('ACT') || (user.year || '').includes('IT') ? user.year : YEAR ${user.year};
-                yrSecEl.innerText = user.role === 'Student' ? ${yrLabel} | SECTION ${user.section || 'N/A'} : DEPT: ${user.section || 'N/A'};
-            }
-            
-            if (badge) {
-                badge.innerText = isTimeOut ? "TIMED OUT" : status.toUpperCase();
-                badge.style.background = isTimeOut ? "#4299e1" : statusColor;
-            }
-
-            if (photoEl) {
-                photoEl.src = user.profilePic || https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=dc143c&color=fff&size=130&bold=true;
-            }
-
-            if (scannerBox) scannerBox.style.display = 'none';
-            successCard.style.display = 'flex';
-            playTerminalSound('success');
-        }
-        
-        if (liveLog) liveLog.style.display = 'block';
-
-        if (!isMaintenanceMode) {
-            if (isTimeOut) {
-                attendance[existingIdx].timeOut = now.getTime();
-                status = "Timed Out";
-            } else {
-                attendance.unshift({
-                    id: user.id,
-                    name: studentDisplayName,
-                    status: status.toUpperCase(),
-                    subject: subjectName || subjectId,
-                    instructor: activeClass ? activeClass.instructor : 'N/A',
-                    code: activeClass ? activeClass.code : 'N/A',
-                    timestamp: now.getTime(),
-                    timeIn: now.getTime(),
-                    timeOut: null
-                });
-            }
-            
-            // Save to localStorage immediately
-            localStorage.setItem('wmsu_attendance', JSON.stringify(attendance));
-
-            // Send email if student is Late or Present (only for students)
-            sendAttendanceEmailNotification(user, isTimeOut ? "TIMED OUT" : status, subjectName);
-
-            const logMessage = ${studentDisplayName} - ${isTimeOut ? 'Time Out recorded' : 'Scan Recorded'} for ${subjectName};
-            appendToEventLog(status.toUpperCase(), logMessage);
-            showToast(RECORDED: ${status.toUpperCase()} - ${subjectName});
-            addGlobalLog(status === 'Late' ? 'WARN' : 'INFO', TERMINAL SCAN: ${studentDisplayName} (${status}) for ${subjectName});
-
-            lastScans[scanVal] = { timestamp: now, subject: subjectId };
-            sessionScanCount = attendance.filter(a => new Date(a.timestamp).toDateString() === now.toDateString()).length;
-            updateScannerStats(user.id);
-        } else {
-            appendToEventLog("TEST SCAN", Maintenance Check: [${user.id}]);
-        }
-
-        // Release the lock immediately after data is written so the scanner stays responsive
-        isProcessingScan = false;
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
-        focusScanner();
-
-        // Reset UI visuals after a short delay
-        const resetDelay = 2500; 
-        setTimeout(() => {
-            // Only hide the success card if another scan hasn't started already
-            if (!isProcessingScan && successCard.style.display === 'flex') {
-                successCard.style.display = 'none';
-                if (scannerBox) scannerBox.style.display = 'block';
-                if (statusLabel) statusLabel.innerText = "AWAITING ID TAG";
-                updateLiveClassDisplay();
-            }
-        }, resetDelay);
-
-    } catch (error) {
-        console.error("Critical Scanner Error:", error);
-        isProcessingScan = false; 
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
-        showErrorFeedback("System Error. Please try again.");
+        const s = schedule[idx];
+        if (!s) return;
+        if (title) title.innerText = 'Edit Schedule';
+        document.getElementById('sched-subject').value = s.subject || '';
+        document.getElementById('sched-code').value = s.code || '';
+        document.getElementById('sched-instructor').value = s.instructor || '';
+        document.getElementById('sched-section').value = s.section || '';
+        document.getElementById('sched-start').value = s.startTime || '';
+        document.getElementById('sched-end').value = s.endTime || '';
+        document.getElementById('sched-room').value = s.room || '';
+        document.getElementById('sched-late').value = s.lateMinutes || 15;
+        document.getElementById('sched-semester').value = s.semester || '1st Semester';
+        const days = Array.isArray(s.days) ? s.days : [];
+        document.querySelectorAll('.sched-day-cb').forEach(cb => {
+            cb.checked = days.includes(cb.value);
+        });
+    } else {
+        if (title) title.innerText = 'Add New Schedule';
     }
-    }, 450); // Snappy verification sequence
+    modal.style.display = 'flex';
 }
 
-function updateTerminalInfoGroup() {
-    const termInfo = document.getElementById('terminal-info-group');
-    if (termInfo) {
-        termInfo.innerHTML = `
-            <p><strong>NODE:</strong> WMSU-CCS-T1</p>
-            <p><strong>LOCATION:</strong> GROUND FLOOR</p>
-            <p><strong>CLOCK:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>MODE:</strong> <span style="color: ${isMaintenanceMode ? 'var(--warning)' : 'var(--success)'}; font-weight: bold;">${isMaintenanceMode ? 'MAINTENANCE' : 'OPERATIONAL'}</span></p>
-        `;
+function closeScheduleModal() {
+    const modal = document.getElementById('scheduleModal');
+    if (modal) modal.style.display = 'none';
+    editingScheduleIdx = null;
+}
+
+function handleSaveSchedule() {
+    const subject = document.getElementById('sched-subject').value.trim();
+    const section = document.getElementById('sched-section').value.trim();
+    const startTime = document.getElementById('sched-start').value;
+    const endTime = document.getElementById('sched-end').value;
+    const days = Array.from(document.querySelectorAll('.sched-day-cb:checked')).map(cb => cb.value);
+
+    if (!subject) { alert('Subject name is required.'); return; }
+    if (!section) { alert('Section is required (e.g. ACT AD 1B).'); return; }
+    if (!startTime || !endTime) { alert('Start and End times are required.'); return; }
+    if (days.length === 0) { alert('Please select at least one class day.'); return; }
+
+    const entry = {
+        subject,
+        code:        document.getElementById('sched-code').value.trim(),
+        instructor:  document.getElementById('sched-instructor').value.trim(),
+        section,
+        days,
+        startTime,
+        endTime,
+        room:        document.getElementById('sched-room').value.trim(),
+        lateMinutes: parseInt(document.getElementById('sched-late').value) || 15,
+        semester:    document.getElementById('sched-semester').value,
+        units: 3
+    };
+
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    if (editingScheduleIdx !== null) {
+        schedule[editingScheduleIdx] = entry;
+        addAdminLog('INFO', `Schedule updated: ${subject} (${section})`);
+    } else {
+        schedule.push(entry);
+        addAdminLog('INFO', `Schedule added: ${subject} (${section})`);
+    }
+
+    localStorage.setItem('wmsu_schedule', JSON.stringify(schedule));
+    renderScheduleTable();
+    closeScheduleModal();
+}
+
+function deleteSchedule(idx) {
+    const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+    const entry = schedule[idx];
+    if (!entry) return;
+    if (confirm(`Delete schedule for "${entry.subject}" (${entry.section})?`)) {
+        schedule.splice(idx, 1);
+        localStorage.setItem('wmsu_schedule', JSON.stringify(schedule));
+        addAdminLog('WARN', `Schedule deleted: ${entry.subject} (${entry.section})`);
+        renderScheduleTable();
     }
 }
 
-window.onload = function() {
-    console.log('--- WMSU RFID Terminal Operational ---');
-
-    if (typeof emailjs !== 'undefined') emailjs.init("YOUR_SERVICE_ID"); // Use YOUR_SERVICE_ID here
-
-    ensureUserRegistry();
-    applySidebarState();
-    
-    if (!localStorage.getItem('wmsu_schedule')) {
-        // Sync with the Admin panel master schedule — proper time-boxed entries only
-        const defaultSched = [
-            { subject: "Readings in Philippine History", code: "RIPH-101", days: ["Tue", "Fri"], startTime: "07:00", endTime: "08:30", room: "LR1", section: "ACT AD 1B", lateMinutes: 15, units: 3, instructor: "REIN RAIN REIGN", semester: "1st Semester" },
-            { subject: "Understanding the Self",         code: "GEC-101",  days: ["Mon"],          startTime: "08:00", endTime: "09:00", room: "LR5", section: "ACT AD 1B", lateMinutes: 15, units: 3, instructor: "DR. ANNA CRUZ",   semester: "1st Semester" },
-            { subject: "Human Computer Interaction",     code: "HCI-102",  days: ["Mon", "Thu"],   startTime: "14:30", endTime: "16:00", room: "LR2", section: "ACT AD 1B", lateMinutes: 15, units: 3, instructor: "MARJORIE ROJAS",  semester: "1st Semester" }
-        ];
-        localStorage.setItem('wmsu_schedule', JSON.stringify(defaultSched));
-    }
-    
-    updateTerminalInfoGroup();
-    updateLiveClassDisplay();
-    setInterval(updateLiveClassDisplay, 60000);
-
-    rfidInput = document.getElementById('rfid-input');
-
-    if (rfidInput) {
-        rfidInput.addEventListener('keydown', function(e) {
-            // Scanners usually send an 'Enter' key at the end of the string
-            if (e.key === 'Enter') {
-                processScan(this.value);
-                this.value = ''; // Clear immediately for next scan
-            }
-        });
-
-        // Handle Enter Button Click
-        document.getElementById('enterIdButton')?.addEventListener('click', function() {
-            if (rfidInput.value.trim()) {
-                processScan(rfidInput.value);
-                rfidInput.value = '';
-            }
-            focusScanner();
-        });
-
-        // Handle Manual Authentication Button Click
-        document.getElementById('manual-scan-btn')?.addEventListener('click', function() {
-            if (rfidInput.value.trim()) {
-                processScan(rfidInput.value);
-                rfidInput.value = '';
-            }
-            focusScanner();
-        });
-    }
-    setInterval(focusScanner, 2000);
-    document.body.addEventListener('click', focusScanner);
-};
-
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    if (t) {
-        t.innerText = msg;
-        t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 3000);
-    }
+function editSchedule(idx) {
+    openScheduleModal(idx);
 }
-ui-avatars.com
+
+window.onload = initSystem;
