@@ -3,111 +3,1536 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Dashboard - RFID Student Attendance</title>
+    <title>Teacher Dashboard - WMSU Analytics</title>
     <link rel="stylesheet" href="onyx.css">
+    <style>
+        :root { 
+            --wmsu-red: #9e1b32; 
+            --wmsu-red-dark: #7a1527;
+            --wmsu-red-light: #dc143c;
+            --wmsu-gold: #d69e2e;
+        }
+        .text-success { color: #2f855a; font-weight: 700; }
+        .text-danger { color: #c53030; font-weight: 700; }
+        
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        #view-overview:checked ~ .app-container .overview-page,
+        #view-charts:checked ~ .app-container .charts-page,
+        #view-students:checked ~ .app-container .students-page,
+        #view-profile:checked ~ .app-container .profile-page,
+        #view-schedule:checked ~ .app-container .schedule-page,
+        #view-excuses:checked ~ .app-container .excuses-page { display: block; }
+        
+        .modal-scroll-area { overflow-y: auto; flex: 1; padding-right: 10px; }
+        
+        #view-overview:checked ~ .app-container label[for="view-overview"],
+        #view-charts:checked ~ .app-container label[for="view-charts"],
+        #view-students:checked ~ .app-container label[for="view-students"],
+        #view-profile:checked ~ .app-container label[for="view-profile"],
+        #view-schedule:checked ~ .app-container label[for="view-schedule"],
+        #view-excuses:checked ~ .app-container label[for="view-excuses"] {
+            background: white;
+            color: var(--wmsu-red);
+            font-weight: 800;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+            border-left: 4px solid var(--wmsu-red);
+        }
+
+        .sidebar { 
+            background: var(--wmsu-red);
+            box-shadow: 4px 0 20px rgba(158, 27, 50, 0.2);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-x: hidden; 
+            overflow-y: auto;
+        }
+        .sidebar.collapsed { width: 85px; padding: 2rem 0.8rem; }
+        .sidebar.collapsed .nav-text, 
+        .sidebar.collapsed .user-details,
+        .sidebar.collapsed .sidebar-header div:not(.wmsu-logo),
+        .sidebar.collapsed h3, 
+        .sidebar.collapsed p { display: none; }
+        
+        .sidebar.collapsed .sidebar-header { justify-content: center; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px; }
+        .sidebar.collapsed .user-profile { justify-content: center; }
+
+        .nav-item {
+            color: rgba(255, 255, 255, 0.8);
+            transition: 0.3s;
+        }
+        .nav-item:hover { color: white; background: rgba(255, 255, 255, 0.1); }
+
+        .page-title h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1a202c; /* Fallback */
+            background: linear-gradient(90deg, #1a202c, #4a5568);
+            background-clip: text; -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .stat-card {
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .stat-card:active {
+            transform: scale(0.96);
+        }
+
+        .mini-table {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #edf2f7;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .analytics-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: #edf2f7;
+            padding: 5px;
+            border-radius: 12px;
+            width: fit-content;
+        }
+        .analytics-toggle-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+            transition: 0.3s;
+            background: transparent;
+            color: var(--text-muted);
+        }
+        .analytics-toggle-btn.active {
+            background: white;
+            color: var(--wmsu-red);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .subject-chip {
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+        .subject-chip.active {
+            background: var(--wmsu-red);
+            color: white;
+            border-color: var(--wmsu-red);
+        }
+
+        .log-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .log-row:hover { background: #f7fafc; }
+        .log-row:last-child { border-bottom: none; }
+
+        .btn-export {
+            background: var(--wmsu-red);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(158, 27, 50, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-export:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(158, 27, 50, 0.3);
+            opacity: 0.9;
+        }
+
+        .toast {
+            position: fixed; bottom: 20px; right: 20px;
+            background: #2d3748; color: white; padding: 12px 24px;
+            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none; z-index: 9999; animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+
+        .toggle-sidebar-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .toggle-sidebar-btn:hover { background: rgba(255,255,255,0.2); }
+        
+        .infra-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 2rem 0 1rem 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .infra-section-header::after { content: ''; flex-grow: 1; height: 1px; background: #e2e8f0; }
+
+        tbody tr { cursor: pointer; transition: background 0.2s ease; }
+        tbody tr:hover { background: #f1f5f9 !important; }
+
+        .profile-page .stat-label { 
+            font-size: 0.85rem; 
+            letter-spacing: 1px; 
+            margin-bottom: 5px;
+        }
+        .profile-page .stat-card { 
+            padding: 2.2rem; 
+        }
+        .profile-page .stat-card h3 {
+            font-size: 1.35rem;
+            color: var(--text-main);
+        }
+
+        @keyframes statusHighlight {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.4); }
+            30% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(56, 161, 105, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); }
+        }
+
+        #view-profile:checked ~ .app-container .profile-page .badge.present {
+            animation: statusHighlight 1.5s ease-out 0.6s 2;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
-    <img src=""
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📋 RFID Student Attendance Dashboard</h1>
-            <div class="user-info">
-                <div class="avatar">MRS</div>
-                <div>
-                    <div style="font-weight: 600; color: #4a5568;">Mrs. Marjorie Rojas</div>
-                    <div style="font-size: 0.9em; color: #718096;">Human Computer and Interaction (HCI)</div>
-                </div>
-            </div>
-        </div>
+    <input type="radio" name="dash-view" id="view-overview" checked hidden>
+    <input type="radio" name="dash-view" id="view-charts" hidden>
+    <input type="radio" name="dash-view" id="view-students" hidden>
+    <input type="radio" name="dash-view" id="view-profile" hidden>
+    <input type="radio" name="dash-view" id="view-schedule" hidden>
+    <input type="radio" name="dash-view" id="view-excuses" hidden>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" data-value="96%">96%</div>
-                <div class="stat-label">Overall Attendance</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">30</div>
-                <div class="stat-label">Total Students</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">4</div>
-                <div class="stat-label">Absent Today</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">26</div>
-                <div class="stat-label">Present Today</div>
-            </div>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls">
-            <div class="period-tabs">
-                <button class="tab-btn active" data-period="week">📊 This Week</button>
-                <button class="tab-btn" data-period="month">📅 This Month</button>
-                <button class="tab-btn" data-period="custom">📆 Custom Range</button>
-            </div>
-            <div class="date-range">
-                <div class="date-group">
-                    <label>From</label>
-                    <input type="date" class="date-input" value="2024-01-15">
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="wmsu-logo">
+                    <img src="C:/Users/RRRV/Downloads/Slide47.JPG" alt="WMSU Crest" 
+                         style="width: 32px; height: 32px; object-fit: contain;"
+                         onerror="this.style.display='none'; this.parentElement.innerText='W'">
                 </div>
-                <div class="date-group">
-                    <label>To</label>
-                    <input type="date" class="date-input" value="2024-01-22">
+                <div style="flex-grow: 1;">
+                    <h3 style="margin-left: 10px;">WMSU Portal</h3>
+                    <p style="margin-left: 10px; font-size: 0.75rem; opacity: 0.8;">Instructor View</p>
                 </div>
+                <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
             </div>
-        </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Attendance Table -->
-            <div class="attendance-table">
-                <div class="table-header">
-                    <div class="table-title">
-                        👥 Student Attendance Records
-                        <span style="font-size: 0.9em; opacity: 0.9;">(Weekly View)</span>
+            <nav class="nav-links">
+                <label for="view-overview" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span> 
+                    <span class="nav-text">General Overview</span>
+                </label>
+                <label for="view-charts" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span> 
+                    <span class="nav-text">Data Analytics</span>
+                </label>
+                <label for="view-schedule" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> 
+                    <span class="nav-text">My Classes</span>
+                </label>
+                <label for="view-students" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> 
+                    <span class="nav-text">Student Records</span>
+                </label>
+                <label for="view-excuses" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></span> 
+                    <span class="nav-text">Review Excuses</span>
+                </label>
+                <a href="#" onclick="openLogoutModal(event)" class="nav-item logout" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> 
+                    <span class="nav-text">Log Out</span>
+                </a>
+            </nav>
+
+            <label for="view-profile" class="user-profile" style="cursor: pointer; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                <div class="avatar">MR</div>
+                <div class="user-details">
+                    <strong style="color: white;" id="prof-name-display">Marjorie Rojas</strong>
+                </div>
+            </label>
+        </aside>
+
+        <main class="content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <section class="page overview-page animate-up">
+                <div class="page-title animate-up">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h1 id="dash-title">Dashboard Overview</h1>
+                            <p id="course-display">Current Course: Loading Subject...</p>
+                            <div id="teacher-subjects-container" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                            <p id="teacher-subjects-hint" style="margin-top: 6px; font-size: 0.72rem; color: var(--text-muted);">Loading assigned subjects...</p>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <select id="section-selector" onchange="filterBySection()" style="padding: 8px 15px; border-radius: 8px; border: 1px solid #ddd; outline: none; font-weight: 600;">
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Student Name</th>
-                            <th>Mon</th>
-                            <th>Tue</th>
-                            <th>Wed</th>
-                            <th>Thu</th>
-                            <th>Fri</th>
-                            <th>Attendance %</th>
-                            <th>Status</th>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 2rem;">
+                    <div class="stat-card animate-up delay-1" onclick="setPopulationFilter('all')">
+                        <span class="stat-label">Total Enrolled</span>
+                        <h2 class="stat-value" id="total-enrolled-val">0</h2>
+                        <span class="stat-sub" id="gender-ratio">Calculating...</span>
+                    </div>
+                    <div class="stat-card animate-up delay-2" style="border-bottom: 3px solid var(--success);" onclick="setPopulationFilter('all')">
+                        <span class="stat-label">Daily Attendance</span>
+                        <h2 class="stat-value text-success" id="live-percent">0%</h2>
+                        <span class="stat-sub">Average this week</span>
+                    </div>
+                    <div class="stat-card animate-up delay-3" style="border-bottom: 3px solid var(--success);" onclick="setPopulationFilter('PRESENT')">
+                        <span class="stat-label">Present Today</span>
+                        <h2 class="stat-value text-success" id="present-today-val">0</h2>
+                        <span class="stat-sub">In Class Now</span>
+                    </div>
+                    <div class="stat-card animate-up delay-4" style="border-bottom: 3px solid var(--danger);" onclick="setPopulationFilter('ABSENT')">
+                        <span class="stat-label">Absent Today</span>
+                        <h2 class="stat-value text-danger" id="absent-today-val">0</h2>
+                        <span class="stat-sub">Missing Students</span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-top: 2.5rem;" class="animate-up delay-5">
+                    <div class="quick-view">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>Real-Time Attendance Feed</h3>
+                            <button onclick="exportAttendance('week')" class="btn-export" style="font-size: 0.7rem;">Quick Report</button>
+                        </div>
+                        <div class="mini-table" id="attendance-log-container">
+                            <p style="padding: 10px; color: #718096;">Waiting for scans...</p>
+                        </div>
+                    </div>
+                    <div class="quick-view">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <h3 style="color: var(--wmsu-red);">"At-Risk" Monitoring</h3>
+                            <button id="btn-send-all-alerts" class="btn-export" style="font-size: 0.65rem; display: none;" onclick="sendBulkEmailAlerts()">Notify All</button>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 15px;">Students with >3 consecutive absences or high tardiness.</p>
+                        <div class="mini-table" id="at-risk-list">
+                            <div style="padding: 15px; text-align: center; color: var(--text-muted);">
+                                All students currently meet reliability thresholds.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page charts-page animate-up">
+                <div class="page-title">
+                    <h1>Data Analytics</h1>
+                    <p id="analytics-subtitle">Visualizing weekly engagement trends</p>
+                </div>
+
+                <div class="analytics-toggle">
+                    <button class="analytics-toggle-btn active" onclick="setAnalyticsPeriod('week', this)">WEEKLY VIEW</button>
+                    <button class="analytics-toggle-btn" onclick="setAnalyticsPeriod('month', this)">MONTHLY VIEW</button>
+                </div>
+
+                <div class="charts-container" style="grid-template-columns: 1.5fr 1fr;">
+                    <div class="chart-box">
+                        <h3 id="chart-vol-title">Attendance Volume (Avg)</h3>
+                        <div class="bar-graph" id="main-attendance-graph">
+                            <div class="bar-item" style="--h: 10%" data-name="Mon"><span>0</span></div>
+                            <div class="bar-item" style="--h: 10%" data-name="Tue"><span>0</span></div>
+                            <div class="bar-item" style="--h: 10%" data-name="Wed"><span>0</span></div>
+                            <div class="bar-item" style="--h: 10%" data-name="Thu"><span>0</span></div>
+                            <div class="bar-item" style="--h: 10%" data-name="Fri"><span>0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="chart-box" style="display: flex; flex-direction: column; align-items: center;">
+                        <h3>Student Distribution</h3>
+                        <div class="pie-graph" id="distribution-pie" style="--present: 0%; --late: 0%; --absent: 100%;"></div>
+                        <div class="pie-legend">
+                            <div><span class="dot present"></span> Present</div>
+                            <div><span class="dot late"></span> Late</div>
+                            <div><span class="dot absent"></span> Absent</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page excuses-page animate-up">
+                <div class="page-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1>Excuse Review Portal</h1>
+                        <p>Evaluate student absence letters and update official records.</p>
+                    </div>
+                    <button onclick="exportApprovedExcusesReport()" class="btn-export">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Weekly Approved Report
+                    </button>
+                </div>
+
+                <div class="table-container" style="margin-top: 2rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Submitted On</th>
+                                <th>Student</th>
+                                <th>Course / Period</th>
+                                <th>Reason Category</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="excuse-requests-body">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page schedule-page animate-up">
+                <div class="page-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1>My Class Schedule</h1>
+                        <p>Manage subjects and time slots assigned to you.</p>
+                    </div>
+                    <button class="btn-export" onclick="openScheduleModal()">+ Add New Class</button>
+                </div>
+                <div class="table-container" style="margin-top: 2rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject / Code</th>
+                                <th>Section</th>
+                                <th>Day & Time</th>
+                                <th>Room</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-schedule-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page students-page">
+                <div class="page-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1>Student Population List</h1>
+                        <p id="population-subtitle">Detailed records for ACT AD 1B</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="teacherStudentSearch" placeholder="Search students..." 
+                               onkeyup="renderStudentRecords()"
+                               style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; outline: none;">
+                        <button onclick="exportAttendance('week')" class="btn-export">Export Weekly</button>
+                        <button onclick="exportAttendance('month')" class="btn-export">Export Monthly</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>ID Number</th>
+                                <th>Gender</th>
+                                <th>Year & Section</th>
+                                <th>Academic Year</th>
+                                <th>Status</th>
+                                <th id="table-percent-header">Week %</th>
+                            </tr>
+                        </thead>
+                    <tbody id="student-records-body">
+                    </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page profile-page animate-up">
+                <div class="page-title animate-up">
+                    <h1>Teacher Profile</h1>
+                    <p>Manage your professional account settings</p>
+                </div>
+
+                <div class="animate-up" style="max-width: 800px;">
+                    <div class="card" style="display: flex; gap: 30px; align-items: center;">
+                        <div id="profile-pic-container" style="position: relative; width: 120px; height: 120px; cursor: pointer;" onclick="document.getElementById('profile-upload').click()" title="Click to upload new photo">
+                            <div id="profile-avatar-large" style="width: 100%; height: 100%; background: var(--wmsu-red); color: white; border-radius: 50%; display: grid; place-items: center; font-size: 3rem; font-weight: 800; box-shadow: 0 10px 20px rgba(158, 27, 50, 0.2); overflow: hidden;">
+                                <img id="large-avatar-img" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                <span id="large-avatar-text">MR</span>
+                            </div>
+                            <div style="position: absolute; bottom: 0; right: 0; background: white; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); color: var(--wmsu-red);">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            </div>
+                            <input type="file" id="profile-upload" hidden accept="image/*" onchange="handleProfileUpload(this)">
+                        </div>
+                        <div>
+                            <h2 style="margin-bottom: 5px;">Marjorie Rojas</h2>
+                            <p style="color: var(--text-muted); margin-bottom: 15px;">HCI Instructor | College of Computing Studies</p>
+                            <span class="badge present">Academic Level Access</span>
+                        </div>
+                    </div>
+
+                    <div class="infra-section-header">Account Details</div>
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-top: 0;">
+                        <div class="stat-card">
+                            <span class="stat-label">Employee ID</span>
+                            <h3 style="margin-top: 10px;">2025-001</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Email Address</span>
+                            <h3 style="margin-top: 10px;">m.rojas@wmsu.edu.ph</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Department</span>
+                            <h3 style="margin-top: 10px;">BS Computer Science</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Assigned Room</span>
+                            <h3 style="margin-top: 10px;">LR2 / Lab 2</h3>
+                        </div>
+                    </div>
+
+                    <div class="infra-section-header">Preferences</div>
+                    <div class="card" style="background: white; padding: 1.5rem; border-radius: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <p style="font-weight: 700;">Class Notifications</p>
+                                <small style="color: var(--text-muted);">Receive alerts for high absence rates</small>
+                            </div>
+                            <input type="checkbox" checked>
+                        </div>
+                        <button class="btn btn-secondary" onclick="alert('Password reset link sent to registered email.')">Change Portal Password</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--wmsu-red); margin-bottom: 1rem;">Confirm Logout</h2>
+            <p style="margin-bottom: 2rem; color: #718096;">Are you sure you want to log out of the instructor portal?</p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeLogoutModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                <button onclick="confirmLogout()" class="btn btn-primary" style="flex: 1;">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewUserModal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: left; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-shrink: 0; border-bottom: 1px solid #edf2f7; padding-bottom: 1rem;">
+                <h2 style="color: var(--wmsu-red); margin: 0;">Student Profile Details</h2>
+                <button onclick="closeViewModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            </div>
+            <div id="userDetailsContent" class="modal-scroll-area" style="display: flex; flex-direction: column; gap: 15px;">
+            </div>
+            <div style="margin-top: 25px; flex-shrink: 0;">
+                <button class="btn btn-primary" style="width: 100%;" onclick="closeViewModal()">Close Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="excuseReviewModal" class="modal">
+        <div class="modal-content" style="max-width: 600px; text-align: left; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-shrink: 0; border-bottom: 1px solid #edf2f7; padding-bottom: 1rem;">
+                <h2 style="color: var(--wmsu-red); margin: 0;">Review Excuse Letter</h2>
+                <button onclick="closeExcuseModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            </div>
+            <div id="excuseLetterContent" class="modal-scroll-area">
+            </div>
+            <div id="excuseActionFooter" style="margin-top: 20px; flex-shrink: 0; display: flex; gap: 10px;">
+            </div>
+        </div>
+    </div>
+
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content" style="max-width:600px; text-align:left;">
+            <div style="padding:1.5rem; border-bottom:1px solid #edf2f7; display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="schedModalTitle" style="color:var(--wmsu-red); margin:0;">Add New Class</h2>
+                <button onclick="closeScheduleModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:1.5rem; display:grid; gap:15px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="font-weight:700; font-size:0.8rem;">Subject Name</label>
+                        <select id="sched-subject" onchange="handleSubjectSelect(this.value)" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight:700; font-size:0.8rem;">Subject Code</label>
+                        <input type="text" id="sched-code" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-weight:700; font-size:0.8rem;">Target Section (e.g., ACT AD 1B)</label>
+                    <input type="text" id="sched-section" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                </div>
+                <div>
+                    <label style="font-weight:700; font-size:0.8rem;">Days</label>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:5px;">
+                        <label><input type="checkbox" class="sched-day-cb" value="Mon"> Mon</label>
+                        <label><input type="checkbox" class="sched-day-cb" value="Tue"> Tue</label>
+                        <label><input type="checkbox" class="sched-day-cb" value="Wed"> Wed</label>
+                        <label><input type="checkbox" class="sched-day-cb" value="Thu"> Thu</label>
+                        <label><input type="checkbox" class="sched-day-cb" value="Fri"> Fri</label>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="font-weight:700; font-size:0.8rem;">Start Time</label>
+                        <input type="time" id="sched-start" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="font-weight:700; font-size:0.8rem;">End Time</label>
+                        <input type="time" id="sched-end" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="font-weight:700; font-size:0.8rem;">Room</label>
+                        <input type="text" id="sched-room" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                </div>
+                <input type="hidden" id="sched-late" value="15">
+            </div>
+            <div style="padding:1.5rem; background:#f8fafc; border-top:1px solid #edf2f7; display:flex; gap:10px;">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()" style="flex:1;">Cancel</button>
+                <button class="btn btn-primary" onclick="handleSaveSchedule()" style="flex:1;">Save Class</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const SUBJECT_CATALOG = [
+            { name: "Readings in Philippine History", code: "RIPH-101" },
+            { name: "Understanding the Self", code: "GEC-101" },
+            { name: "Human Computer Interaction", code: "HCI-102" },
+            { name: "Introduction to Computing", code: "CC-101" },
+            { name: "Computer Programming", code: "CC-102" },
+            { name: "Discrete Structures", code: "DS-118" },
+            { name: "Movement Competency Training", code: "PATHFIT-1" }
+        ];
+
+        function initRegistry() {
+            const existingUsers = localStorage.getItem('wmsu_users');
+            if (!existingUsers || JSON.parse(existingUsers).length === 0) {
+                const studentList = [
+                    { id: "2025-02697", name: "AGEAS, ROVHIC CHAWEE A.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-05-15", email: "ageas@wmsu.edu.ph", mobile: "09123456789", address: "Zamboanga City", emergencyName: "Juan Ageas", emergencyNo: "09123456789", history: [{year: "2023-2024", semester: "2nd Semester", rate: 94}, {year: "2023-2024", semester: "1st Semester", rate: 88}] },
+                    { id: "2025-01218", name: "AHAMAD, AINEE HANA TAN.", role: "Student", gender: "Female", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2006-01-12", email: "ahamad@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Ali Ahamad", emergencyNo: "09123456789", address: "Zamboanga City", history: [{year: "2023-2024", semester: "2nd Semester", rate: 91}] },
+                    { id: "2025-02109", name: "AKBARA, AMILHAN MANCERAS.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-12-04", email: "akbara@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Hadj Akbara", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-01689", name: "ALAVERA, RHAINIEL GENESIS G.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-08-30", email: "alavera@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Rey Alavera", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02141", name: "ALVAREZ, JERIC LINTO.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-11-11", email: "alvarez@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Elena Alvarez", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02972", name: "BAGARINAO, ONYX FERRER.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-03-24", email: "bagarinao@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Leo Bagarinao", emergencyNo: "09123456789", address: "Zamboanga City", history: [{year: "2023-2024", semester: "2nd Semester", rate: 92}, {year: "2023-2024", semester: "1st Semester", rate: 85}] },
+                    { id: "2025-00580", name: "BAKILI, MUTALIB ALAJA.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2006-02-28", email: "bakili@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Sitti Bakili", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02122", name: "BANGAHAN, HARDIDZMAR-YAQEEN DAHAM..", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-09-17", email: "bangahan@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Musa Bangahan", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02106", name: "CABUAL, CHRISTIAN JOSHUA FELICIANO.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2006-04-12", email: "cabual@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Grace Cabual", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-01791", name: "DELA CRUZ, SHEINA LOVE ABDULKADIL.", role: "Student", gender: "Female", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-07-04", email: "delacruz@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Dela Cruz", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-01344", name: "ESPIRITU, ARCHILLES HALILONG.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-12-25", email: "espiritu@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Espiritu", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-01246", name: "FLORES, JOSHUA PEPITO.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2006-05-20", email: "flores@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Flores", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02969", name: "GALLEPOSO, SAM DANIEL.", role: "Student", gender: "Male", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-08-14", email: "galleposo@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Galleposo", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02128", name: "HITGANO, RICH CEZARINA LAYCA ALFON.", role: "Student", gender: "Female", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-02-14", email: "hitgano@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Hitgano", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02864", name: "MAMANTAR, JHERYANNE JULIAN.", role: "Student", gender: "Female", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-10-10", email: "mamantar@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Mamantar", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02717", name: "MOHAMMAD, ALLYSA NAVARRO.", role: "Student", gender: "Female", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2006-03-31", email: "mohammad@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Mohammad", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-01220", name: "PEREYRA, KRIS MARIANE DRAGON.", role: "Student", gender: "Female", year: "ACT-1", section: "B", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", dob: "2005-09-09", email: "pereyra@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Pereyra", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00650", name: "PRIAS, CARL IAN REYES", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Male", dob: "2005-06-12", email: "prias@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Prias", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-03364", name: "PUERTO, ANGEL GRACE PAING.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2005-04-20", email: "puerto@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Puerto", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00538", name: "PULA, CRISDIANTHY LUKUH.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2005-11-25", email: "pula@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Pula", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00296", name: "SAILELA, CASSANDRA ASHLEY BAYABOS.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2006-07-07", email: "sailela@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Sailela", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00716", name: "SOLAMBAO, KRYZEL JOY SALAHOP..", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2005-12-12", email: "solambao@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Solambao", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02680", name: "TAGAYAN, YLLISHEDRINE HAMDANI.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2006-08-18", email: "tagayan@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Tagayan", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00169", name: "TAMPARONG, NOVIE JOZANE DICHOSO.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2005-02-28", email: "tamparong@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Tamparong", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00272", name: "TAROG, REYMER BOLO.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Male", dob: "2006-09-09", email: "tarog@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Tarog", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2017-01278", name: "TELAN, YVONNE REDJ FRANCISCO.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2000-01-01", email: "telan@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Telan", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00326", name: "TUBLE, DARELL DELEON..", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Male", dob: "2005-07-20", email: "tuble@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Tuble", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-00290", name: "VICENTE, ELLICE ROSE SOLANO.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Female", dob: "2006-11-30", email: "vicente@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Vicente", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-02601", name: "VILLALOBOS, RURIK RAE RELLON.", role: "Student", enrollDate: "Jan 12, 2024", status: "Active", year: "ACT-1", section: "B", curriculum: "Associate in Computer Technology", gender: "Male", dob: "2005-04-14", email: "villalobos@wmsu.edu.ph", mobile: "09123456789", emergencyName: "Villalobos", emergencyNo: "09123456789", address: "Zamboanga City" },
+                    { id: "2025-001", name: "ROJAS, MARJORIE", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Female", lastName: "ROJAS" },
+                    { id: "2025-002", name: "LINES, MARVIC", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Male", lastName: "LINES" },
+                    { id: "2025-003", name: "BALLAHO, JAYDEE", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Male", lastName: "BALLAHO" },
+                    { id: "2025-004", name: "BALAN, JOJEN", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Male", lastName: "BALAN" },
+                    { id: "2025-005", name: "RHAMIR, JAAFAR", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Male", lastName: "RHAMIR" },
+                    { id: "2025-006", name: "MARTIN, BILLY JEAN", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Female", lastName: "MARTIN" },
+                    { id: "2025-007", name: "REIGN RAIN, REIN", role: "Faculty", enrollDate: "Aug 20, 2023", status: "Active", gender: "Female", lastName: "REIGN" }
+                ];
+                localStorage.setItem('wmsu_users', JSON.stringify(studentList));
+            }
+        };
+
+        function loadTeacherIdentity() {
+            const currentId = localStorage.getItem('wmsu_current_faculty');
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+            
+            const sectionSelect = document.getElementById('section-selector');
+            if (sectionSelect) {
+                const uniqueSections = Array.from(new Set(schedule.map(s => s.section)));
+                sectionSelect.innerHTML = `<option value="all">Filter by Section</option>` + 
+                    uniqueSections.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+            
+            const teacher = users.find(u => u.id === currentId) || 
+                            users.find(u => u.role === 'Faculty' || u.role === 'Teacher') || 
+                            { name: "Instructor", id: "N/A" };
+            
+            const initials = (teacher.name || "UN").split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.querySelectorAll('#prof-name-display, .profile-page h2').forEach(el => el.innerText = teacher.name);
+            updateAvatarUI(teacher);
+            
+            window.currentTeacherName = teacher.name;
+            const lastName = (teacher.lastName || (teacher.name && teacher.name.includes(',') ? teacher.name.split(',')[0] : teacher.name.split(' ').pop()) || "").trim().toUpperCase();
+            const myClasses = schedule.filter(s => s.instructor && s.instructor.toUpperCase().includes(lastName));
+            
+            renderScheduleTable();
+            
+            const allUsers = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const studentsOnly = allUsers.filter(u => (u.role || 'Student').toString().toLowerCase() === 'student');
+            const container = document.getElementById('teacher-subjects-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const allBtn = document.createElement('button');
+            allBtn.className = 'analytics-toggle-btn subject-chip active';
+            allBtn.dataset.subject = "All Subjects";
+            allBtn.dataset.section = "all";
+            allBtn.innerHTML = `Show All Students (<strong>${studentsOnly.length}</strong>)`;
+            allBtn.onclick = () => switchSubject('All Subjects', 'all');
+            container.appendChild(allBtn);
+
+            if (myClasses.length > 0) {
+                container.innerHTML += myClasses.map(c => {
+                    const classSec = (c.section || '').toUpperCase().trim();
+                    const enrolledCount = studentsOnly.filter(s => {
+                        const studSec = (s.section || '').toUpperCase().trim();
+                        return classSec === studSec || classSec.includes(studSec) || studSec.includes(classSec);
+                    }).length;
+
+                    return `
+                    <button class="analytics-toggle-btn subject-chip" 
+                            data-subject="${c.subject}" 
+                            data-section="${c.section}"
+                            onclick="switchSubject('${c.subject}', '${c.section}')">
+                        ${c.subject} (${c.section}) — <strong>${enrolledCount} Enrolled</strong>
+                    </button>
+                `}).join('');
+                document.getElementById('teacher-subjects-hint').innerText = "Select a subject to switch dashboard context.";
+                
+                if (!window.currentTeacherSubject) {
+                    switchSubject(myClasses[0].subject, myClasses[0].section);
+                }
+            } else {
+                container.innerHTML = '';
+                document.getElementById('teacher-subjects-hint').innerText = "No classes found in registry for this instructor.";
+                document.getElementById('course-display').innerText = "General Faculty View (No specific class assigned)";
+            }
+        }
+
+        function updateAvatarUI(teacher) {
+            const initials = (teacher.name || "UN").split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const largeImg = document.getElementById('large-avatar-img');
+            const largeText = document.getElementById('large-avatar-text');
+            const sidebarAvatar = document.querySelector('.sidebar .avatar');
+            const removeBtn = document.getElementById('remove-photo-btn');
+
+            if (teacher.profilePic) {
+                if (largeImg) {
+                    largeImg.src = teacher.profilePic;
+                    largeImg.style.display = 'block';
+                }
+                if (largeText) largeText.style.display = 'none';
+                if (sidebarAvatar) {
+                    sidebarAvatar.innerHTML = `<img src="${teacher.profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                    sidebarAvatar.style.background = 'transparent';
+                }
+                if (removeBtn) removeBtn.style.display = 'block';
+            } else {
+                if (largeImg) largeImg.style.display = 'none';
+                if (largeText) {
+                    largeText.style.display = 'grid';
+                    largeText.innerText = initials;
+                }
+                if (sidebarAvatar) {
+                    sidebarAvatar.innerHTML = initials;
+                    sidebarAvatar.style.background = 'var(--wmsu-red)';
+                }
+                if (removeBtn) removeBtn.style.display = 'none';
+            }
+        }
+
+        function handleProfileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                const currentId = localStorage.getItem('wmsu_current_faculty');
+                let users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+                const teacherIdx = users.findIndex(u => u.id === currentId);
+
+                if (teacherIdx > -1) {
+                    users[teacherIdx].profilePic = dataUrl;
+                    localStorage.setItem('wmsu_users', JSON.stringify(users));
+                    updateAvatarUI(users[teacherIdx]);
+                    showToast("Profile picture updated successfully.");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeProfilePhoto() {
+            if (!confirm("Are you sure you want to remove your profile photo?")) return;
+            
+            const currentId = localStorage.getItem('wmsu_current_faculty');
+            let users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const teacherIdx = users.findIndex(u => u.id === currentId);
+
+            if (teacherIdx > -1) {
+                delete users[teacherIdx].profilePic;
+                localStorage.setItem('wmsu_users', JSON.stringify(users));
+                updateAvatarUI(users[teacherIdx]);
+                showToast("Profile photo removed.");
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            if (t) {
+                t.innerText = msg;
+                t.style.display = 'block';
+                setTimeout(() => t.style.display = 'none', 3000);
+            }
+        }
+
+        let activeSection = 'all';
+        let currentTeacherSubject = '';
+
+        function filterBySection() {
+            activeSection = document.getElementById('section-selector').value;
+            refreshDashboard();
+            renderStudentRecords();
+        }
+
+        function switchSubject(subject, section) {
+            window.currentTeacherSubject = subject;
+            activeSection = section;
+            localStorage.setItem('teacher_last_subject', subject);
+            localStorage.setItem('teacher_last_section', section);
+            document.querySelectorAll('.subject-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.subject === subject && btn.dataset.section === section);
+            });
+            const select = document.getElementById('section-selector');
+            if (select) {
+                const optionExists = Array.from(select.options).some(opt => opt.value === section);
+                if (optionExists) select.value = section;
+                else select.value = 'all';
+            }
+
+            document.getElementById('course-display').innerText = `Current Context: ${section} - ${subject}`;
+            refreshDashboard();
+            renderExcuseRequests();
+            renderStudentRecords();
+        }
+
+        let activePeriod = 'week';
+        let activePopulationFilter = 'all';
+
+        function setPopulationFilter(filter) {
+            activePopulationFilter = filter;
+            document.getElementById('view-students').checked = true;
+            renderStudentRecords();
+        }
+
+        function setAnalyticsPeriod(period, btn) {
+            activePeriod = period;
+            document.querySelectorAll('.analytics-toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const label = period === 'week' ? 'Weekly' : 'Monthly';
+            document.getElementById('analytics-subtitle').innerText = `Visualizing ${label.toLowerCase()} engagement trends`;
+            document.getElementById('chart-vol-title').innerText = `${label} Attendance Volume (Avg)`;
+            document.getElementById('table-percent-header').innerText = `${label} %`;
+            
+            refreshDashboard();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        function getPeriodStartDate() {
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            if (activePeriod === 'week') return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+
+        function renderStudentRecords() {
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            let attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+            
+            const currentId = localStorage.getItem('wmsu_current_faculty');
+            const teacher = users.find(u => u.id === currentId);
+            const lastName = teacher ? (teacher.lastName || teacher.name.split(',')[0] || "").trim().toUpperCase() : "";
+
+            if (window.currentTeacherSubject && window.currentTeacherSubject !== 'All Subjects') {
+                attendance = attendance.filter(l => l.subject === window.currentTeacherSubject);
+            } else {
+                // If "All Subjects" or no subject selected, show all records belonging to this instructor
+                if (lastName) {
+                    attendance = attendance.filter(l => 
+                        (l.instructor && l.instructor.toUpperCase().includes(lastName)) ||
+                        (l.instructor && teacher.name && teacher.name.toUpperCase().includes(l.instructor.toUpperCase()))
+                    );
+                }
+            }
+            
+            const tbody = document.getElementById('student-records-body');
+            const today = new Date().toDateString();
+            const startDate = getPeriodStartDate();
+            const searchQuery = document.getElementById('teacherStudentSearch')?.value.toLowerCase() || "";
+
+            let studentsOnly = users.filter(u => {
+                const role = (u.role || 'Student').toString().toLowerCase();
+                const matchesRole = role === 'student';
+                
+                const studSec = (u.section || '').toUpperCase().trim();
+                const activeSec = activeSection.toUpperCase().trim();
+                const matchesSection = activeSec === 'ALL' || studSec === activeSec || activeSec.includes(studSec) || studSec.includes(activeSec);
+                
+                const fullName = u.name || (u.firstName ? `${u.lastName}, ${u.firstName}` : u.id);
+                const matchesSearch = fullName.toLowerCase().includes(searchQuery) || u.id.toLowerCase().includes(searchQuery);
+                
+                return matchesRole && matchesSection && matchesSearch;
+            });
+
+            const sub = document.getElementById('population-subtitle');
+            if (activePopulationFilter !== 'all') {
+                studentsOnly = studentsOnly.filter(user => {
+                    const hasScannedToday = attendance.some(log => log.id === user.id && new Date(log.timestamp).toDateString() === today);
+                    return activePopulationFilter === 'PRESENT' ? hasScannedToday : !hasScannedToday;
+                });
+                sub.innerHTML = `Showing <span class="${activePopulationFilter === 'PRESENT' ? 'text-success' : 'text-danger'}">${activePopulationFilter}</span> students today. <a href="#" onclick="setPopulationFilter('all')" style="color:var(--text-muted); margin-left:10px; font-size:0.7rem;">Clear Filter</a>`;
+            } else {
+                sub.innerText = `Detailed records for ${window.currentTeacherSubject || 'Course'}`;
+            }
+
+            tbody.innerHTML = studentsOnly.map(user => {
+                const fullName = user.name || (user.firstName ? `${user.lastName}, ${user.firstName}` : user.id);
+                const periodLogs = attendance.filter(l => l.id === user.id && new Date(l.timestamp) >= startDate);
+                const uniqueDays = new Set(periodLogs.map(l => new Date(l.timestamp).toDateString())).size;
+                const todayLog = periodLogs.find(log => new Date(log.timestamp).toDateString() === today);
+
+                const expectedDays = activePeriod === 'week' ? 5 : 20; 
+                const attPercent = Math.min(100, Math.round((uniqueDays / expectedDays) * 100));
+
+                let statusHTML = '<span class="badge absent" style="background:#fff1f0; color:#e53e3e;">Absent</span>';
+                if (todayLog) statusHTML = `<span class="badge ${todayLog.status.toLowerCase()}">${todayLog.status}</span>`;
+                const riskLevel = attPercent < 80 ? '<span style="color:#e53e3e; font-size:0.7rem; font-weight:800; display:block;">⚠️ RISK ATTRITION</span>' : '';
+
+                return `
+                    <tr onclick="showUserDetails('${user.id}')">
+                        <td><strong>${fullName}</strong></td>
+                        <td>${user.id}</td>
+                        <td>${user.gender}</td>
+                        <td>${user.year || 'N/A'}-${user.section || 'N/A'}</td>
+                        <td><span style="font-weight: 600; color: var(--wmsu-red);">${user.semester || '1st Sem'} ${user.academicYear || ''}</span></td>
+                        <td>${statusHTML}</td>
+                        <td><strong>${attPercent}%</strong>${riskLevel}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function refreshDashboard() {
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+
+            const currentId = localStorage.getItem('wmsu_current_faculty');
+            const teacher = users.find(u => u.id === currentId);
+            const lastName = teacher ? (teacher.lastName || teacher.name.split(',')[0] || "").trim().toUpperCase() : "";
+
+            let filteredAttendance = attendance;
+            if (window.currentTeacherSubject && window.currentTeacherSubject !== 'All Subjects') {
+                filteredAttendance = attendance.filter(l => l.subject === window.currentTeacherSubject);
+            } else {
+                if (lastName) {
+                    filteredAttendance = attendance.filter(l => 
+                    (l.instructor && (
+                        l.instructor.toUpperCase().includes(lastName) || 
+                        (teacher.name && teacher.name.toUpperCase().includes(l.instructor.toUpperCase()))
+                    ))
+                    );
+                }
+            }
+
+            const container = document.getElementById('attendance-log-container');
+            const todayStr = new Date().toDateString();
+            const startDate = getPeriodStartDate();
+            const now = new Date();
+
+            const students = users.filter(u => {
+                const matchesRole = (u.role || 'Student').toString().toLowerCase() === 'student';
+                const matchesSection = activeSection === 'all' || u.section === activeSection || (u.section && u.section.includes(activeSection));
+                return matchesRole && matchesSection;
+            });
+            const totalEnrolled = students.length;
+
+            const presentToday = new Set(
+                filteredAttendance
+                    .filter(log => new Date(log.timestamp).toDateString() === todayStr)
+                    .filter(log => students.some(s => s.id === log.id))
+                    .map(log => log.id)
+            ).size;
+
+            const absentToday = totalEnrolled - presentToday;
+            const percent = totalEnrolled > 0 ? Math.round((presentToday / totalEnrolled) * 100) : 0;
+
+            document.getElementById('total-enrolled-val').innerText = totalEnrolled;
+            document.getElementById('gender-ratio').innerText = `${students.filter(s=>s.gender==='Male').length} Male | ${students.filter(s=>s.gender==='Female').length} Female`;
+            document.getElementById('present-today-val').innerText = presentToday;
+            document.getElementById('absent-today-val').innerText = absentToday;
+            document.getElementById('live-percent').innerText = percent + "%";
+
+            const countWeekdays = (start, end, dayName) => {
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                let count = 0, curr = new Date(start);
+                while (curr <= end) {
+                    if (days[curr.getDay()].startsWith(dayName)) count++;
+                    curr.setDate(curr.getDate() + 1);
+                }
+                return Math.max(1, count);
+            };
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const barItems = document.querySelectorAll('#main-attendance-graph .bar-item');
+            if (barItems.length > 0) {
+                barItems.forEach((item) => {
+                    const dayName = item.getAttribute('data-name');
+                    const totalForDay = filteredAttendance.filter(log => {
+                        const d = new Date(log.timestamp);
+                        return d >= startDate && days[d.getDay()].startsWith(dayName);
+                    }).length;
+                    
+                    const occurrences = countWeekdays(startDate, now, dayName);
+                    const avg = Math.round(totalForDay / occurrences);
+                    const h = totalEnrolled > 0 ? (avg / totalEnrolled) * 100 : 0;
+                    item.style.setProperty('--h', Math.max(5, h) + '%');
+                    item.querySelector('span').innerText = avg;
+                });
+            }
+
+            const periodLogs = filteredAttendance.filter(log => new Date(log.timestamp) >= startDate);
+            const uniquePeriodLogs = Array.from(new Set(periodLogs.map(l => `${l.id}-${new Date(l.timestamp).toDateString()}`)));
+            const periodLate = periodLogs.filter(l => l.status === 'LATE').length;
+            const totalExpected = totalEnrolled * (activePeriod === 'week' ? 5 : 20);
+            
+            const pP = totalExpected > 0 ? Math.round(((periodLogs.length - periodLate) / totalExpected) * 100) : 0;
+            const pL = totalExpected > 0 ? Math.round((periodLate / totalExpected) * 100) : 0;
+            const pA = 100 - pP - pL;
+
+            const pie = document.getElementById('distribution-pie');
+            if (pie) {
+                pie.style.setProperty('--present', pP + '%');
+                pie.style.setProperty('--late', pL + '%');
+                pie.style.setProperty('--absent', Math.max(0, pA) + '%');
+            }
+
+            container.innerHTML = filteredAttendance.length === 0 ? 
+                '<p style="padding: 10px; color: #718096;">Waiting for scans...</p>' : 
+                filteredAttendance.slice(0, 5).map((log, idx) => `
+                    <div class="log-row" style="animation: fadeInUp 0.3s ease-out both;">
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-weight:600;">${log.name}</span>
+                            <div style="display:flex; flex-direction:column; gap: 2px;">
+                                <small style="color:var(--text-muted); font-size:0.7rem;">
+                                    IN: ${new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 
+                                    ${log.timeOut ? `| OUT: ${new Date(log.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : ''}
+                                </small>
+                                <span style="font-size: 0.65rem; background: #ebf8ff; color: #2b6cb0; padding: 2px 6px; border-radius: 4px; font-weight:700;">${log.subject || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span class="badge ${log.status.toLowerCase()}">${log.status}</span>
+                            <button onclick="deleteLogEntry(${idx})" 
+                                    style="background:none; border:none; color:#e53e3e; cursor:pointer; font-size:1.1rem;" 
+                                    title="Delete Record">×</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            const atRiskContainer = document.getElementById('at-risk-list');
+            const atRiskStudents = students.filter(s => {
+                const logs = filteredAttendance.filter(l => l.id === s.id && new Date(l.timestamp) >= startDate);
+                const expectedDays = activePeriod === 'week' ? 5 : 20;
+                return logs.length < (expectedDays * 0.6); 
+            });
+
+            const sendAllBtn = document.getElementById('btn-send-all-alerts');
+            if (sendAllBtn) sendAllBtn.style.display = atRiskStudents.length > 0 ? 'inline-flex' : 'none';
+
+            atRiskContainer.innerHTML = atRiskStudents.length === 0 ? 
+                '<div style="padding: 15px; text-align: center; color: var(--text-muted);">All students meet reliability thresholds.</div>' :
+                atRiskStudents.slice(0, 5).map(s => {
+                    const count = attendance.filter(l => l.id === s.id && new Date(l.timestamp) >= startDate).length;
+                    const rate = Math.round((count / (activePeriod === 'week' ? 5 : 20)) * 100);
+                    return `
+                    <div class="log-row" style="border-left: 4px solid var(--danger); align-items: center;">
+                        <div style="display:flex; flex-direction:column; flex: 1;">
+                            <span style="font-weight:600;">${s.name}</span>
+                            <small style="color:var(--text-muted); font-size:0.7rem;">Participation Rate: ${rate}%</small>
+                        </div>
+                        <div style="display:flex; gap: 8px; align-items: center;">
+                            <span class="text-danger" style="font-size:0.6rem; font-weight:800;">LOW ATTENDANCE</span>
+                            <button onclick="sendEmailAlert('${s.id}')" 
+                                    style="background:none; border: 1px solid var(--wmsu-red); color: var(--wmsu-red); padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; cursor: pointer;">
+                                Email
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+            renderStudentRecords();
+        }
+
+        function deleteLogEntry(index) {
+            if(confirm("Delete this attendance record?")) {
+                const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+                attendance.splice(index, 1);
+                localStorage.setItem('wmsu_attendance', JSON.stringify(attendance));
+                refreshDashboard();
+                showToast("Record deleted successfully.");
+            }
+        }
+
+        function exportAttendance(period) {
+            const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+            const now = new Date();
+            let startTime;
+
+            if (period === 'week') {
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            } else if (period === 'month') {
+                startTime = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+
+            const filteredLogs = attendance
+                .filter(log => new Date(log.timestamp) >= startTime)
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            if (filteredLogs.length === 0) {
+                alert(`No records found for the selected ${period} period.`);
+                return;
+            }
+
+            let csvContent = "Date,Time,Student ID,Name,Status\n";
+            filteredLogs.forEach(log => {
+                const d = new Date(log.timestamp);
+                const dateStr = d.toLocaleDateString();
+                const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                csvContent += `${dateStr},${timeStr},${log.id},"${log.name}",${log.status}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `WMSU_Attendance_${period}_${now.toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast(`${period.toUpperCase()} report exported.`);
+        }
+
+        function exportApprovedExcusesReport() {
+            const excuses = JSON.parse(localStorage.getItem('wmsu_excuses')) || [];
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const now = new Date();
+            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            const filtered = excuses.filter(req => {
+                const isApproved = req.status === 'Approved';
+                const matchesSubject = window.currentTeacherSubject ? req.subject.includes(window.currentTeacherSubject) : true;
+                const isWithinWeek = new Date(req.submissionDate) >= oneWeekAgo;
+                return isApproved && matchesSubject && isWithinWeek;
+            });
+
+            if (filtered.length === 0) {
+                alert("No approved excuses found for the last 7 days in this subject.");
+                return;
+            }
+
+            let csvContent = "Submission Date,Student ID,Student Name,Subject,Reason Category,Period,Instructor Response\n";
+            filtered.forEach(req => {
+                const student = users.find(u => u.id === req.studentId);
+                const name = student ? (student.name || `${student.lastName}, ${student.firstName}`) : req.studentId;
+                const submittedDate = new Date(req.submissionDate).toLocaleDateString();
+                const period = `"${req.startDate} to ${req.endDate}"`;
+                csvContent += `"${submittedDate}","${req.studentId}","${name}","${req.subject}","${req.reasonCategory}",${period},"${req.instructorResponse || ''}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Approved_Excuses_Weekly_${now.toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Weekly approved excuses report exported.");
+        }
+
+        function sendEmailAlert(studentId) {
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const studentIdx = users.findIndex(u => u.id === studentId);
+            if (studentIdx === -1) return;
+            
+            if (!users[studentIdx].alertHistory) users[studentIdx].alertHistory = [];
+            users[studentIdx].alertHistory.unshift({
+                timestamp: Date.now(),
+                type: 'Individual Warning',
+                period: activePeriod
+            });
+            
+            localStorage.setItem('wmsu_users', JSON.stringify(users));
+            showToast(`Alert sent to ${users[studentIdx].email || 'student email'}`);
+        }
+
+        function sendBulkEmailAlerts() {
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const attendance = JSON.parse(localStorage.getItem('wmsu_attendance')) || [];
+            const startDate = getPeriodStartDate();
+            const students = users.filter(u => (u.role || 'Student').toString().toLowerCase() === 'student' && 
+                             (activeSection === 'all' || u.section === activeSection || (u.section && u.section.includes(activeSection))));
+            
+            const atRiskStudents = students.filter(s => {
+                const logs = attendance.filter(l => l.id === s.id && new Date(l.timestamp) >= startDate);
+                return logs.length < ((activePeriod === 'week' ? 5 : 20) * 0.6); 
+            });
+
+            if (atRiskStudents.length === 0) return;
+            
+            if(confirm(`Send automated attendance warnings to ${atRiskStudents.length} at-risk students?`)) {
+                atRiskStudents.forEach(s => {
+                    const idx = users.findIndex(u => u.id === s.id);
+                    if (idx !== -1) {
+                        if (!users[idx].alertHistory) users[idx].alertHistory = [];
+                        users[idx].alertHistory.unshift({ timestamp: Date.now(), type: 'Batch Warning', period: activePeriod });
+                    }
+                });
+                localStorage.setItem('wmsu_users', JSON.stringify(users));
+                showToast(`Sending ${atRiskStudents.length} batch alerts...`);
+                setTimeout(() => {
+                    showToast("Batch notification process complete.");
+                }, 1500);
+            }
+        }
+
+        function openLogoutModal(e) { e.preventDefault(); document.getElementById('logoutModal').style.display = 'flex'; }
+        function closeLogoutModal() { document.getElementById('logoutModal').style.display = 'none'; }
+        function confirmLogout() { window.location.href = 'Landing_page.html'; }
+
+        function showUserDetails(id) {
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const u = users.find(user => user.id === id);
+            if (!u) { console.error("User not found for ID:", id); return; }
+            
+            const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+            const studentSection = (u.section || '').toUpperCase();
+            const studCurr = (u.curriculum || '').toUpperCase();
+            const manualCodes = u.manualCourses || [];
+            
+            const myCourses = (u.role === 'Faculty' || u.role === 'Teacher') ? [] : schedule.filter(s => {
+                if (s.semester && s.semester !== (u.semester || "1st Semester")) return false;
+                const schedSecFull = (s.section || '').toUpperCase();
+                const studCurr = (u.curriculum || '').toUpperCase();
+                
+                const studIdent = (u.section || '').toUpperCase().split(' ').pop() || (u.section || '').toUpperCase();
+                const schedIdent = schedSecFull.split(' ').pop();
+                const isSectionMatch = (schedSecFull === (u.section || '').toUpperCase()) || (schedIdent === studIdent) || (schedIdent.endsWith(studIdent)) || (studIdent.endsWith(schedIdent));
+
+                const isACT = studCurr.includes('ACT') || studCurr.includes('TECHNOLOGY') || studCurr.includes('DEVELOPMENT') || studCurr.includes('ASSOCIATE');
+                const isCS = studCurr.includes('CS') || studCurr.includes('COMPUTER SCIENCE');
+                const isIT = studCurr.includes('IT') || studCurr.includes('INFORMATION TECHNOLOGY');
+
+                const progMatch = (isACT && schedSecFull.includes('ACT')) || (isCS && schedSecFull.includes('CS')) || (isIT && schedSecFull.includes('IT'));
+                
+                return (isSectionMatch && (progMatch || schedSecFull.length <= 5 || schedSecFull.split(' ').length === 1)) || manualCodes.includes(s.code);
+            });
+
+            const uniqueCourses = [];
+            const courseMap = new Map();
+            myCourses.forEach(c => {
+                if(!courseMap.has(c.code)) { courseMap.set(c.code, true); uniqueCourses.push(c); }
+            });
+
+            const coursesHTML = (u.role === 'Faculty' || u.role === 'Teacher') ? '' : `
+                <div style="background: #f0fdf4; border-radius: 12px; padding: 15px; border: 1px solid #dcfce7; margin-top: 15px;">
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        Linked Courses <div style="flex: 1; height: 1px; background: #dcfce7;"></div>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${uniqueCourses.map(c => `<span style="background: white; border: 1px solid #bbf7d0; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; color: #166534;">${c.subject}</span>`).join('') || '<p style="font-size:0.75rem; color:var(--text-muted);">No linked courses found.</p>'}
+                    </div>
+                </div>`;
+
+            const content = document.getElementById("userDetailsContent");
+            const fullName = u.name || (u.firstName ? `${u.lastName}, ${u.firstName} ${u.middleName || ''}` : u.id);
+            const initial = u.firstName ? u.firstName.charAt(0) : (u.name ? u.name.charAt(0) : '?');
+            
+            content.innerHTML = `
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <div style="width: 80px; height: 80px; background: var(--wmsu-red); color: white; border-radius: 50%; display: grid; place-items: center; font-size: 2rem; font-weight: 800; margin: 0 auto; box-shadow: 0 4px 10px rgba(158, 27, 50, 0.2);">${initial}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #edf2f7; padding-top: 20px;">
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">FULL NAME</label><div style="font-weight: 700; color: var(--text-main);">${fullName}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">USER ROLE</label><div style="font-weight: 700; color: var(--text-main);">${u.role || 'Student'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">ID NUMBER</label><div style="font-weight: 700; color: var(--text-main);"><code>${u.id}</code></div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">DATE OF BIRTH</label><div style="font-weight: 700; color: var(--text-main);">${u.dob || 'N/A'}</div></div>
+                    <div><label style="color: var(--wmsu-red); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">ACADEMIC PERIOD</label><div style="font-weight: 800; color: var(--wmsu-red);">${u.semester || 'N/A'} <span style="background: var(--wmsu-red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${u.academicYear || 'N/A'}</span></div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">CURRICULUM</label><div style="font-weight: 700; color: var(--text-main);">${u.curriculum || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">EMAIL</label><div style="font-weight: 700; color: var(--text-main);">${u.email || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">MOBILE</label><div style="font-weight: 700; color: var(--text-main);">${u.mobile || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">GENDER</label><div style="font-weight: 700; color: var(--text-main);">${u.gender || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">YEAR & SECTION</label><div style="font-weight: 700; color: var(--text-main);">${u.year || 'N/A'}-${u.section || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">EMERGENCY CONTACT</label><div style="font-weight: 700; color: var(--text-main);">${u.emergencyName || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">EMERGENCY PHONE</label><div style="font-weight: 700; color: var(--text-main);">${u.emergencyNo || 'N/A'}</div></div>
+                    <div style="grid-column: span 2;"><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">ADDRESS</label><div style="font-weight: 700; color: var(--text-main);">${u.address || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">REGISTRY DATE</label><div style="font-weight: 700; color: var(--text-main);">${u.enrollDate || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">SYSTEM STATUS</label><div style="font-weight: 700; color: #38a169;">${u.status || 'Active'}</div></div>
+                </div>
+
+                ${coursesHTML}
+
+                <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-top: 15px;">
+                    <div style="font-size: 0.7rem; font-weight: 800; color: var(--wmsu-red); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                        Academic History <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    </div>
+                    ${(u.history || []).map(h => `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #edf2f7;"><span style="font-weight:600; font-size: 0.85rem;">${h.year} - ${h.semester}</span><span style="color:var(--wmsu-red); font-weight:800; font-size: 0.85rem;">${h.rate}% Rate</span></div>`).join('') || '<p style="font-size:0.8rem; color:var(--text-muted);">No historical records found for this student.</p>'}
+                </div>
+
+                <div style="background: #fffaf0; border-radius: 12px; padding: 20px; border: 1px solid #feebc8; margin-top: 15px;">
+                    <div style="font-size: 0.7rem; font-weight: 800; color: #c05621; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                        Notification History <div style="flex: 1; height: 1px; background: #feebc8;"></div>
+                    </div>
+                    ${(u.alertHistory || []).map(a => `
+                        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #feebc8;">
+                            <div>
+                                <span style="font-weight:700; font-size: 0.85rem; display:block; color:#7b341e;">${a.type}</span>
+                                <small style="color:var(--text-muted); font-size:0.7rem;">Sent on ${new Date(a.timestamp).toLocaleString()}</small>
+                            </div>
+                            <span style="font-size: 0.7rem; background: #fff; border: 1px solid #feebc8; padding: 2px 6px; border-radius: 4px; color: #c05621; height: fit-content; font-weight: 700;">${(a.period || 'WEEK').toUpperCase()}</span>
+                        </div>
+                    `).join('') || '<p style="font-size:0.8rem; color:var(--text-muted);">No notifications dispatched to this student.</p>'}
+                </div>
+            `;
+            document.getElementById("viewUserModal").style.display = "flex";
+        }
+
+        function closeViewModal() {
+            document.getElementById("viewUserModal").style.display = "none";
+        }
+
+        function renderExcuseRequests() {
+            const excuses = JSON.parse(localStorage.getItem('wmsu_excuses')) || [];
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const tbody = document.getElementById('excuse-requests-body');
+            if (!tbody) return;
+
+            let filtered = excuses;
+            if (window.currentTeacherSubject) {
+                filtered = excuses.filter(e => e.subject.includes(window.currentTeacherSubject));
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No excuse requests found for this subject.</td></tr>`;
+            } else {
+                tbody.innerHTML = filtered.map(req => {
+                    const student = users.find(u => u.id === req.studentId);
+                    const name = student ? (student.name || `${student.lastName}, ${student.firstName}`) : req.studentId;
+                    const statusClass = req.status === 'Approved' ? 'present' : (req.status === 'Rejected' ? 'absent' : 'late');
+                    const submittedDate = new Date(req.submissionDate).toLocaleDateString();
+                    
+                    return `
+                        <tr onclick="showExcuseModal('${req.id}')">
+                            <td>${submittedDate}</td>
+                            <td><strong>${name}</strong><br><small style="color:var(--text-muted);">${req.studentId}</small></td>
+                            <td>${req.subject}<br><small style="color:var(--text-muted);">${req.startDate} to ${req.endDate}</small></td>
+                            <td>${req.reasonCategory}</td>
+                            <td><span class="badge ${statusClass}">${req.status}</span></td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Review Letter</button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2025-02907</td>
-                            <td>ABAH, NADZMI GAPUR.</td>
-                            <td><span class="status present">Present</span></td>
-                            <td><span class="status present">Present</span></td>
-                            <td><span class="status present">Present</span></td>
-                            <td><span class="status late">Late</span></td>
-                            <td><span class="status present">Present</span></td>
-                            <td><strong>95%</strong></td>
-                            <td><span class="status present">✅ Good</span></td>
-                        </tr>
-                        <tr>
-                            <td>2025-02697</td>
-                            <td>AGEAS, ROVHIC CHAWEE ALESNA.</td>
-                            <td><span class="status present">Present</span></td>
-                            <td><span class="status absent">Absent</span></td>
-                            <td><span class="status present">Present</span></td>
-                            <td><span class="status present">Present</span></td>
-                            <td><span class="status present">Present</span></td>
-                            <td><strong>80%</strong></td>
-                            <td><span class="status absent">⚠️ Alert</span></td>
-                        </tr>
-                        <tr>
-                            <td>2025-01218</td>
-                            <td>AHAMAD, AINEE HANA TAN.</td>
-                            <td><span class="status present">Present</span></td>
+                    `;
+                }).join('');
+            }
+        }
+
+        function showExcuseModal(id) {
+            const excuses = JSON.parse(localStorage.getItem('wmsu_excuses')) || [];
+            const req = excuses.find(e => e.id === id);
+            if (!req) return;
+
+            const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+            const student = users.find(u => u.id === req.studentId);
+            const studentName = student ? (student.name || `${student.lastName}, ${student.firstName}`) : req.studentId;
+
+            const content = document.getElementById('excuseLetterContent');
+            const footer = document.getElementById('excuseActionFooter');
+
+            content.innerHTML = `
+                <div style="background: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; font-family: 'serif'; line-height: 1.6; color: #334155;">
+                    <div style="text-align: right; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted);">
+                        Filed on: ${new Date(req.submissionDate).toLocaleDateString()}
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <strong>FROM:</strong> ${studentName}<br>
+                        <strong>SUBJECT:</strong> Absence Excuse Request for ${req.subject}
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        Dear Instructor,<br><br>
+                        I am writing to formally request an excuse for my absence in your class from <strong>${req.startDate}</strong> to <strong>${req.endDate}</strong>.
+                    </div>
+                    <div style="margin-bottom: 20px; padding: 15px; background: white; border-left: 4px solid var(--wmsu-red); border-radius: 4px;">
+                        <strong>Reason Category:</strong> ${req.reasonCategory}<br>
+                        <strong>Explanation:</strong> ${req.message}
+                    </div>
+                    <div style="font-size: 0.85rem;">
+                        <strong>Supporting Document:</strong> <span style="color: var(--wmsu-red); font-weight: 700;">${req.document}</span>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <label style="display:block; margin-bottom: 8px; font-weight: 700; font-size: 0.85rem;">Instructor's Response / Feedback</label>
+                    <textarea id="instructorFeedback" placeholder="Enter your response here..." 
+                              style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; height: 80px; font-family: inherit;"
+                              ${req.status !== 'Pending' ? 'disabled' : ''}>${req.instructorResponse || ''}</textarea>
+                </div>
+            `;
+
+            if (req.status === 'Pending') {
+                footer.innerHTML = `
+                    <button class="btn btn-primary" style="flex: 1; background: #38a169;" onclick="updateExcuseStatus('${req.id}', 'Approved')">Approve Excuse</button>
+                    <button class="btn btn-primary" style="flex: 1; background: #e53e3e;" onclick="updateExcuseStatus('${req.id}', 'Rejected')">Reject Request</button>
+                `;
+            } else {
+                footer.innerHTML = `<div style="text-align: center; width: 100%; padding: 10px; background: #f1f5f9; border-radius: 8px; font-weight: 700; color: var(--text-muted);">This request has already been ${req.status.toUpperCase()}.</div>`;
+            }
+
+            document.getElementById('excuseReviewModal').style.display = 'flex';
+        }
+
+        function closeExcuseModal() {
+            document.getElementById('excuseReviewModal').style.display = 'none';
+        }
+
+        function updateExcuseStatus(id, newStatus) {
+            const feedback = document.getElementById('instructorFeedback').value;
+            const excuses = JSON.parse(localStorage.getItem('wmsu_excuses')) || [];
+            const idx = excuses.findIndex(e => e.id === id);
+            
+            if (idx > -1) {
+                excuses[idx].status = newStatus;
+                excuses[idx].instructorResponse = feedback;
+                localStorage.setItem('wmsu_excuses', JSON.stringify(excuses));
+                
+                showToast(`Request ${newStatus} successfully.`);
+                closeExcuseModal();
+                renderExcuseRequests();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        function applySidebarState() {
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                document.querySelector('.sidebar').classList.add('collapsed');
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById("viewUserModal")) closeViewModal();
+            if (event.target == document.getElementById("excuseReviewModal")) closeExcuseModal();
+            if (event.target == document.getElementById("logoutModal")) closeLogoutModal();
+        }
+
+        // Initialize and listen for cross-tab updates
+        window.onload = () => {
+            initRegistry();
+            loadTeacherIdentity();
+            applySidebarState();
+            refreshDashboard();
+            // Auto-refresh every 30 seconds for live feel
+            setInterval(refreshDashboard, 30000);
+        };
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'wmsu_attendance') {
+                refreshDashboard();
+                // Notify teacher if the new scan is for one of their subjects
+                try {
+                    const attendance = JSON.parse(e.newValue);
+                    if (attendance && attendance.length > 0) {
+                        const latest = attendance[0];
+                        const currentId = localStorage.getItem('wmsu_current_faculty');
+                        const users = JSON.parse(localStorage.getItem('wmsu_users')) || [];
+                        const teacher = users.find(u => u.id === currentId);
+                        
+                        // Match logic: Check if teacher's last name appears in the record's instructor field
+                        const lastName = teacher ? (teacher.lastName || (teacher.name && teacher.name.includes(',') ? teacher.name.split(',')[0] : teacher.name.split(' ').pop()) || "").trim().toUpperCase() : "";
+                        
+                        if (lastName && latest.instructor && latest.instructor.toUpperCase().includes(lastName)) {
+                            showToast(`LIVE: ${latest.name} marked ${latest.status} for ${latest.subject}`);
+                        }
+                    }
+                } catch (err) { console.error("Live notification failed", err); }
+            }
+            
+            if (e.key === 'wmsu_users') {
+                loadTeacherIdentity();
+                refreshDashboard();
+            }
+        });
+    </script>
+</body>
+</html>
