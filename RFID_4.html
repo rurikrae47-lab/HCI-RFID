@@ -4,189 +4,202 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMSU RFID Attendance System</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="RFID_4.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <input type="checkbox" id="nav-toggle" class="logic-gate">
-    <input type="radio" name="page-select" id="page-terminal" class="logic-gate" checked>
-    <input type="radio" name="page-select" id="page-report" class="logic-gate">
-    
-    <input type="radio" name="admin-tab" id="tab-dashboard" class="logic-gate" checked>
-    <input type="radio" name="admin-tab" id="tab-controls" class="logic-gate">
-
-    <label for="nav-toggle" class="menu-trigger">☰ Menu</label>
-    <label for="nav-toggle" class="overlay"></label>
+    <input type="radio" name="terminal-page" id="page-terminal" checked hidden>
+    <input type="radio" name="terminal-page" id="page-report" hidden>
 
     <aside class="sidebar">
-        <div class="sidebar-content">
-            <div class="user-profile-section">
-                <div class="profile-info">
-                    <h2 class="sidebar-title"><span class="logo-text">WMSU - ACT AD 1B</span></h2>
-                </div>
-            </div>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+            <button class="toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar"></button>
+        </div>
+        <h2 class="sidebar-title">WMSU TERMINAL</h2>
+        <label for="page-terminal" class="nav-btn"><span class="nav-text">TERMINAL SCANNER</span></label>
+        <label for="maintenance-mode-toggle" class="nav-btn" onclick="toggleMaintenanceMode()" style="border: 1px solid rgba(255,255,255,0.1);">
+            <span class="nav-text">MAINTENANCE MODE</span>
+        </label>
+        <button class="nav-btn" id="restore-btn" onclick="restoreSystemDefaults()" style="display: none; background: rgba(0,0,0,0.2); width: 100%; border: 1px dashed rgba(255,255,255,0.4); text-align: left;">
+            <span class="nav-text">RESTORE DEFAULTS</span>
+        </button>
+        <a href="#" onclick="openLogoutModal(event)" class="nav-btn" style="margin-top: 1rem; border: 2px solid var(--sidebar-border); text-align: center; text-decoration: none; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;">DISCONNECT</a>
+        
+        <div class="stats-box" style="margin-top: auto;">
+            <div id="terminal-info-group" class="info-group"></div>
+            <p>SCANS THIS SESSION: <strong id="session-scan-count">0</strong></p>
+            <p>LAST AUTH: <strong id="latest-scan-id">NONE</strong></p>
+        </div>
 
-            <div class="info-group">
-                <p><strong>College:</strong> CCS</p>
-                <p><strong>Subject:</strong> HCI</p>
-                <p><strong>Room:</strong> LR2</p>
-            </div>
-
-            <nav class="navigation-menu">
-                <h3>NAVIGATION</h3>
-                <label for="page-terminal" class="nav-btn">
-                    <span class="nav-icon">📟</span> Terminal Scanner
-                </label>
-                <!-- Removed direct links to other portals from the public terminal -->
-                <a href="Landing_page.html" class="nav-btn" style="text-decoration: none; display: flex; align-items: center; cursor: pointer; color: white;">
-                    <span class="nav-icon">🚪</span> Back to Portal
-                </a>
-
-                <label for="page-report" class="nav-btn">
-                    <span class="nav-icon">🐞</span> Report an Error
-                </label>
-            </nav>
-
-            <div class="status-rules">
-                <h4>🕒 TIMING RULES</h4>
-                <ul>
-                    <li class="p-rule"><span>02:30</span> <strong>Present</strong></li>
-                    <li class="l-rule"><span>02:50</span> <strong>Late</strong></li>
-                    <li class="a-rule"><span>Miss</span> <strong>Absent</strong></li>
-                </ul>
-            </div>
-
-            <label for="nav-toggle" class="close-sidebar">Close×</label>
+        <div class="status-rules" style="margin-top: 2rem;">
+            <h4>SESSION PROTOCOL</h4>
+            <ul id="timing-protocol-list" style="list-style: none; font-size: 0.8rem; opacity: 0.8;"></ul>
         </div>
     </aside>
 
-    <div class="main-container">
-        
-        <section class="content-page terminal-view">
-            <header>
-                <h1>RFID Scanning Terminal</h1>
-                <p>Status: <span class="p-rule">ACTIVE</span></p>
-            </header>
+    <main class="main-container">
+        <div class="glass-panel terminal-view">
+            <div id="scanner-box">
+                <header class="terminal-header">
+                    <h1 style="text-align: center; font-size: 2.2rem; letter-spacing: 4px; margin-bottom: 5px;">IDENTITY SCANNER</h1>
+                    <div id="scanned-subject-display" style="min-height: 60px; margin-bottom: 15px; text-align: center;"></div>
+                </header>
 
-            <form class="scanner-unit" action="" method="get">
                 <div class="visual-scanner">
+                    <div class="scanner-grid"></div>
+                    <div class="scanner-ring"></div>
                     <div class="laser-line"></div>
-                    <p>TAP STUDENT ID</p>
-                </div>
-                
-                <input type="text" name="id" placeholder="Scan here..." autofocus required pattern="[0-9]{4}-[0-9]{5}">
-                <p class="sub-text">Place card near the reader to log attendance.</p>
-                
-                <div class="student-success-card">
-                    <div class="profile-pic-container">
-                        <img src="student1.png" alt="Student Photo">
-                    </div>
-                    <div class="student-info">
-                        <h3 class="success-label">ATTENDANCE LOGGED!</h3>
-                        <h2 class="student-name">ABAH, NADZMI GAPUR.</h2>
-                        <p class="student-id-display">ID: 2025-02907</p>
-                        <div class="status-badge-reveal">PRESENT</div>
-                    </div>
+                    <div id="scanner-status-label" style="letter-spacing: 3px;">AWAITING ID TAG</div>
+                    <div id="scanner-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; color: white; font-weight: bold;">VERIFYING...</div>
+                    <div class="scanner-corner top-left"></div>
+                    <div class="scanner-corner top-right"></div>
+                    <div class="scanner-corner bottom-left"></div>
+                    <div class="scanner-corner bottom-right"></div>
                 </div>
 
-                <div class="tap-success-toast success-msg">Attendance Submitted Successfully!</div>
-                <div class="tap-success-toast error-msg">Invalid ID: Not Registered in WMSU</div>
-            </form>
-
-            <div class="attendance-records-reveal">
-                <h3 style="margin-top: 30px; color: #555;">Live Attendance Log (Latest 5)</h3>
-                
-                <div class="scan-result success">
-                    <div class="check-circle">✓</div>
-                    <div class="result-details">
-                        <h2 class="student-name">ABAH, NADZMI GAPUR.</h2>
-                        <p class="student-id">ID: 2025-02907</p>
-                        <div class="badge-row"><span class="status-badge present">PRESENT</span><span class="time-log">02:35 PM</span></div>
-                    </div>
+                <div class="scanner-input-group">
+                    <input type="text" id="rfid-input" placeholder="SCAN OR TYPE ID" autofocus autocomplete="off" style="flex-grow: 1;">
+                    <button id="enterIdButton" class="scanner-action-btn">Enter</button>
                 </div>
+                <p id="error-msg" style="color: #ff4d4d; text-align: center; margin-top: 10px; display: none; font-weight: bold;"></p>
+                <button id="manual-scan-btn" class="nav-btn" style="width: 100%; margin-top: 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">MANUAL AUTHENTICATION</button>
+            </div>
 
-                <div class="scan-result late-card">
-                    <div class="check-circle yellow-bg">!</div>
-                    <div class="result-details">
-                        <h2 class="student-name yellow-text">AGEAS, ROVHIC CHAWEE ALESNA.</h2>
-                        <p class="student-id">ID: 2025-02697</p>
-                        <div class="badge-row"><span class="status-badge yellow-badge">LATE </span><span class="time-log">02:55 PM</span></div>
-                    </div>
+            <div id="success-card" class="student-success-card">
+                <div id="card-label" style="color: var(--success); font-weight: 800; letter-spacing: 1px; margin-bottom: 5px;">AUTHENTICATION SUCCESS</div>
+                <div id="success-subject-display" style="color: var(--wmsu-crimson); font-weight: 700; margin-bottom: 20px; text-transform: uppercase;"></div>
+                <img id="student-photo" src="" class="student-photo">
+                <h2 class="student-name">--</h2>
+                <p class="student-id-display">ID: --</p>
+                <p id="student-year-section" style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 15px; font-weight: 600; text-transform: uppercase;"></p>
+                <div class="status-badge-reveal">PRESENT</div>
+            </div>
+
+            <div id="maintenance-log-section" style="display: none; margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>SYSTEM AUDIT LOG</h3>
+                    <button onclick="clearSessionLog()" class="btn btn-secondary" style="padding: 5px 15px; border-radius: 5px; cursor: pointer;">Clear Log</button>
                 </div>
+                <div id="log-list" class="log-list"></div>
+            </div>
+        </div>
 
-                <div class="scan-result success">
-                    <div class="check-circle">✓</div>
-                    <div class="result-details">
-                        <h2 class="student-name">AHAMAD, AINEE HANA TAN.</h2>
-                        <p class="student-id">ID: 2025-01218</p>
-                        <div class="badge-row"><span class="status-badge present">PRESENT</span><span class="time-log">02:31 PM</span></div>
-                    </div>
+        <div class="glass-panel report-view" style="display: none;">
+            <h2 style="color: var(--wmsu-crimson); text-align: center; margin-bottom: 1.5rem; font-size: 2rem; letter-spacing: 2px;">REPORT SYSTEM ANOMALY</h2>
+            <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem;">Please provide details about any hardware malfunctions, software bugs, or data inconsistencies.</p>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 12px; margin-bottom: 2rem;">
+                <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Infrastructure Audit Notice</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
+                    Detailed reports facilitate rapid resolution. For critical failures (e.g., total scanner blackout), please visit the <strong>CCS ICT Laboratory</strong> immediately. Routine bugs will be addressed during the next maintenance cycle.
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Full Name of Reporter</label>
+                    <input type="text" placeholder="Enter your full name" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
                 </div>
-
-                <div class="scan-result absent-card">
-                    <div class="check-circle red-bg">X</div>
-                    <div class="result-details">
-                        <h2 class="student-name red-text">AKBARA, AMILHAN MANCERAS.</h2>
-                        <p class="student-id">ID: 2025-02109</p>
-                        <div class="badge-row"><span class="status-badge red-badge">ABSENT</span><span class="time-log">No Log Found</span></div>
-                    </div>
-                </div>
-
-                <div class="scan-result success">
-                    <div class="check-circle">✓</div>
-                    <div class="result-details">
-                        <h2 class="student-name">ALAVERA, RHAINIEL GENESIS G.</h2>
-                        <p class="student-id">ID: 2025-01689</p>
-                        <div class="badge-row"><span class="status-badge present">PRESENT</span><span class="time-log">02:30 PM</span></div>
-                    </div>
+                <div>
+                    <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Location / Lab Room</label>
+                    <input type="text" placeholder="e.g. CCS Lab 1 / LR2" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
                 </div>
             </div>
-        </section>
 
-        <section class="content-page report-view">
-            <header class="dashboard-header">
-                <h1>Bug Reporting Portal</h1>
-                <p>Help us improve the WMSU RFID System</p>
-            </header>
-
-            <div class="report-card-container">
-                <input type="checkbox" id="trigger-notif" class="logic-gate">
-                <form class="report-form-card" onsubmit="document.getElementById('trigger-notif').checked = true; return false;">
-                    <div class="input-group" style="margin-bottom:15px;">
-                        <label style="display:block; color:#333; font-weight:bold;">Email</label>
-                        <input type="email" placeholder="Enter your Email" class="ui-input" required 
-                               style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
-                    </div>
-                    <div class="input-group" style="margin-bottom:15px;">
-                        <label style="display:block; color:#333; font-weight:bold;">Category</label>
-                        <select class="ui-input" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
-                            <option>ID Not Scanning</option>
-                            <option>System Lag</option>
-                            <option>UI/Layout Error</option>
-                        </select>
-                    </div>
-                    <div class="input-group" style="margin-bottom:15px;">
-                        <label style="display:block; color:#333; font-weight:bold;">Description</label>
-                        <textarea placeholder="Describe the bug..." class="ui-input ui-textarea" required
-                                  style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; height:80px;"></textarea>
-                    </div>
-                    <button type="submit" class="simulate-send-btn">Send Report</button>
-                </form>
-                <div class="sent-notification">
-                    <span class="icon">✔</span>
-                    <div class="notif-text"><strong>Report Sent!</strong><p>Thank you for your feedback.</p></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Contact Number / Email</label>
+                    <input type="text" placeholder="e.g. 09123456789" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Specific Urgency</label>
+                    <select style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
+                        <option value="routine">Routine (System is usable)</option>
+                        <option value="urgent">Urgent (Affecting accuracy)</option>
+                        <option value="immediate">Immediate (Hardware Failure)</option>
+                    </select>
                 </div>
             </div>
-        </section>
-    </div>
 
-    <div class="admin-controls-fab">
-        <input type="checkbox" id="fab-trigger" class="logic-gate">
-        <label for="fab-trigger" class="fab-main">⚙️</label>
-        <div class="fab-options">
-            <button class="fab-btn" onclick="window.print()">📄 Generate PDF</button>
-            <button class="fab-btn lock-btn">🔒 Lock Session</button>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Anomaly Type</label>
+                <select style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
+                    <option value="">-- Select Type --</option>
+                    <option value="hardware">Hardware Malfunction</option>
+                    <option value="software">Software Bug</option>
+                    <option value="data">Data Inconsistency</option>
+                    <option value="security">Security Incident</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Severity</label>
+                <div style="display: flex; gap: 15px;">
+                    <label style="display: flex; align-items: center; color: var(--text-main);"><input type="radio" name="severity" value="low" style="margin-right: 5px;"> Low</label>
+                    <label style="display: flex; align-items: center; color: var(--text-main);"><input type="radio" name="severity" value="medium" style="margin-right: 5px;"> Medium</label>
+                    <label style="display: flex; align-items: center; color: var(--text-main);"><input type="radio" name="severity" value="high" style="margin-right: 5px;"> High</label>
+                    <label style="display: flex; align-items: center; color: var(--text-main);"><input type="radio" name="severity" value="critical" style="margin-right: 5px;"> Critical</label>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Incident Date/Time</label>
+                    <input type="datetime-local" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Reported By (Role)</label>
+                    <select style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
+                        <option value="faculty">Faculty</option>
+                        <option value="student">Student</option>
+                        <option value="staff">Staff/Security</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Affected Device/User ID (Optional)</label>
+                <input type="text" placeholder="e.g., HW-772-B or 2025-01234" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">Detailed Description</label>
+                <textarea placeholder="Describe the anomaly, when it occurred, and any observed symptoms..." style="width: 100%; height: 150px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); color: var(--text-main); padding: 12px; border-radius: 8px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; color: var(--text-main); margin-bottom: 12px; font-weight: 600;">System Pre-check</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <label style="display: flex; align-items: center; color: var(--text-muted); font-size: 0.85rem;"><input type="checkbox" style="margin-right: 8px;"> Internet Connection Stable</label>
+                    <label style="display: flex; align-items: center; color: var(--text-muted); font-size: 0.85rem;"><input type="checkbox" style="margin-right: 8px;"> Scanner Power LED is ON</label>
+                    <label style="display: flex; align-items: center; color: var(--text-muted); font-size: 0.85rem;"><input type="checkbox" style="margin-right: 8px;"> RFID Tag is Physical</label>
+                    <label style="display: flex; align-items: center; color: var(--text-muted); font-size: 0.85rem;"><input type="checkbox" style="margin-right: 8px;"> Software not frozen</label>
+                </div>
+            </div>
+
+            <div style="background: rgba(163, 26, 50, 0.1); border-left: 4px solid var(--wmsu-crimson); padding: 15px; border-radius: 8px; margin-bottom: 2rem;">
+                <p style="color: var(--text-main); font-size: 0.85rem; font-weight: 700;">Submission Reference: <span style="font-family: monospace; color: var(--wmsu-crimson);">WMSU-LOG-PENDING</span></p>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 5px;">Your report will be automatically prioritized based on urgency and location.</p>
+            </div>
+
+            <button class="nav-btn" style="width: 100%; background: var(--wmsu-crimson); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.3s ease;" onclick="alert('Anomaly reported to ICT office.')">Submit Report</button>
+        </div>
+    </main>
+
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--wmsu-crimson); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px;">Disconnect Session</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">Are you sure you want to terminate the terminal session and return to the portal?</p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button onclick="closeLogoutModal()" class="btn-cancel" style="flex: 1; border: none; font-weight: 800; padding: 12px 20px; border-radius: 8px;">NO</button>
+                <button onclick="confirmLogout()" class="btn-confirm" style="flex: 1; border: none; font-weight: 800; padding: 12px 20px; border-radius: 8px;">YES</button>
+            </div>
         </div>
     </div>
 
+    <div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a202c; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 2000;"></div>
+
+    <script src="RFID_4.js"></script>
 </body>
 </html>
