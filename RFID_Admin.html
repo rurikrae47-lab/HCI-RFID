@@ -3,181 +3,1199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="rfid-style.css">
+    <title>WMSU | System Administration</title>
+    <link rel="stylesheet" href="onyx.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wmsu-red: #9e1b32;
+            --sidebar-bg: #0f0f0f;
+            --accent: #e53e3e;
+            --glass: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-emphasized {
+            background: var(--wmsu-red) !important;
+            color: white !important;
+            box-shadow: 0 4px 20px rgba(158, 27, 50, 0.4);
+            animation: pulse-red 2.5s infinite;
+            padding: 12px 28px !important;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(158, 27, 50, 0.7); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 12px rgba(158, 27, 50, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(158, 27, 50, 0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(56, 161, 105, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1.2); }
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 300px;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-primary { background: var(--wmsu-red); color: white; }
+        .btn-secondary { background: #edf2f7; color: #4a5568; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 1.5rem;
+            animation: fadeInUp 0.5s ease-out;
+            perspective: 1200px;
+        }
+
+        .device-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 1px solid #edf2f7;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .device-card:hover {
+            transform: translateZ(20px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot-online { background: #38a169; box-shadow: 0 0 5px #38a169; }
+        .dot-offline { background: #e53e3e; }
+
+        .health-meter {
+            height: 6px;
+            background: #edf2f7;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .log-list {
+            background: #1a1a1a;
+            color: #a0aec0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry { margin-bottom: 8px; border-bottom: 1px solid #2d3748; padding-bottom: 4px; }
+        .log-time { color: #63b3ed; }
+        .log-tag { color: #f6ad55; }
+
+        #nav-dashboard:checked ~ .app-container .nav-links label[for="nav-dashboard"],
+        #nav-users:checked ~ .app-container .nav-links label[for="nav-users"],
+        #nav-attendance:checked ~ .app-container .nav-links label[for="nav-attendance"],
+        #nav-schedule:checked ~ .app-container .nav-links label[for="nav-schedule"],
+        #nav-logs:checked ~ .app-container .nav-links label[for="nav-logs"],
+        #nav-announcements:checked ~ .app-container .nav-links label[for="nav-announcements"] {
+            background: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid white;
+            color: white;
+            transform: translateX(5px) translateZ(10px);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+        }
+
+        #nav-profile:checked ~ .app-container .user-profile {
+            border-left: 4px solid white;
+            transform: translateX(5px);
+        }
+
+        #nav-dashboard:checked ~ .app-container .dashboard-page,
+        #nav-users:checked ~ .app-container .users-page,
+        #nav-attendance:checked ~ .app-container .attendance-page,
+        #nav-schedule:checked ~ .app-container .schedule-page,
+        #nav-logs:checked ~ .app-container .logs-page,
+        #nav-announcements:checked ~ .app-container .announcements-page,
+        #nav-profile:checked ~ .app-container .profile-page {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalAppear {
+            from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        #userModal .modal-content {
+            border: 2px solid var(--wmsu-red);
+            box-shadow: 0 20px 50px rgba(158, 27, 50, 0.2);
+        }
+
+        .modal-scroll-area {
+            overflow-y: auto;
+            padding: 1.5rem 2.5rem;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2.5rem;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 15px;
+            background: #f8fafc;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-tag {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--wmsu-red);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-tag::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #cbd5e1;
+        }
+
+        .badge.faculty { background: #eef2ff; color: #4338ca; }
+        .log-entry.error { border-left: 4px solid #e53e3e; background: rgba(229, 62, 62, 0.05); }
+        .log-entry.warn { border-left: 4px solid #f6ad55; background: rgba(246, 173, 85, 0.05); }
+        .log-entry.info { border-left: 4px solid #48bb78; background: rgba(72, 187, 120, 0.05); }
+        
+        .highlight { background: rgba(158, 27, 50, 0.15); color: var(--wmsu-red); padding: 0 2px; border-radius: 3px; font-weight: 700; }
+        
+        .device-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; font-size: 0.75rem; color: #718096; }
+        .meta-item b { color: var(--sidebar-bg); }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-filter-btn { padding: 5px 12px; border-radius: 5px; border: 1px solid #333; background: transparent; color: #a0aec0; cursor: pointer; font-size: 0.8rem; }
+        .log-filter-btn.active { background: var(--wmsu-red); border-color: var(--wmsu-red); color: white; }
+
+        .infra-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 2rem 0 1rem 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .infra-section-header::after { content: ''; flex-grow: 1; height: 1px; background: #e2e8f0; }
+
+        .sidebar { position: sticky; top: 0; height: 100vh; overflow-x: hidden; overflow-y: auto; z-index: 1000; box-shadow: 10px 0 30px rgba(0,0,0,0.15); }
+        .sidebar.collapsed { width: 85px; padding: 2rem 0.8rem; }
+        .sidebar.collapsed .nav-text, 
+        .sidebar.collapsed .user-details,
+        .sidebar.collapsed .sidebar-header div:not(.wmsu-logo),
+        .sidebar.collapsed h3, 
+        .sidebar.collapsed p { display: none; }
+        
+        .sidebar.collapsed .sidebar-header { justify-content: center; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px; }
+        .sidebar.collapsed .user-profile { justify-content: center; }
+
+        .nav-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; vertical-align: middle; margin-right: 12px; }
+        .sidebar.collapsed .nav-icon svg { margin-right: 0; }
+
+        .toggle-sidebar-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white; flex-shrink: 0;
+            width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .toggle-sidebar-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .infra-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 1rem;
+        }
+
+        .infra-group {
+            position: relative;
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: white;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            box-shadow: 8px 8px 20px rgba(0,0,0,0.02);
+        }
+
+        .infra-group:hover {
+            transform: translateY(-15px) rotateX(10deg) rotateY(-5deg);
+            box-shadow: 20px 30px 60px rgba(0,0,0,0.12);
+            border-color: #e2e8f0;
+            z-index: 10;
+            border-top: 4px solid var(--wmsu-red);
+        }
+
+        .infra-group h2, .infra-group h3, .infra-group div, .infra-group span {
+            transform: translateZ(35px);
+        }
+
+        .infra-peek {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--wmsu-red);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            opacity: 0;
+            transition: 0.3s;
+            pointer-events: none;
+        }
+
+        .infra-group:hover .infra-peek {
+            opacity: 1;
+            transform: translateY(-5px);
+        }
+
+        tbody tr { cursor: pointer; transition: background 0.2s ease; }
+        tbody tr:hover { background: #f1f5f9 !important; }
+
+        .modal-detail-box {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+        
+        .reg-toggle {
+            display: flex;
+            background: #edf2f7;
+            padding: 5px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .reg-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+            border-radius: 8px;
+            transition: 0.3s;
+            color: var(--text-muted);
+        }
+        .reg-btn.active { background: white; color: var(--wmsu-red); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .admin-toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #1a202c;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            animation: slideInAdminToast 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 5px solid var(--wmsu-red);
+        }
+        @keyframes slideInAdminToast {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-       <div class="header">
-    <div>
-        <h1 style="color: #9e1b32;">⚙️ System Administration</h1>
-        <p style="color: #718096;">WMSU RFID Infrastructure Management</p>
-        <a href="Landing_page.html" style="text-decoration: none; color: #9e1b32; font-size: 0.9em; font-weight: bold;">← Back to Portal</a>
-    </div>
-    <div class="user-info">
-        <div class="avatar">ADM</div>
-        <div>
-            <div style="font-weight: 600;">System Admin</div>
-            <div style="font-size: 0.8em; color: green;">● System Online</div>
-        </div>
-    </div>
-</div>
-        <div class="stats-grid">
-            <div class="stat-card" style="border-top-color: #2b6cb0;">
-                <div class="stat-number">1,240</div>
-                <div class="stat-label">Registered Tags</div>
-            </div>
-            <div class="stat-card" style="border-top-color: #38a169;">
-                <div class="stat-number">85</div>
-                <div class="stat-label">Active Devices</div>
-            </div>
-            <div class="stat-card" style="border-top-color: #e53e3e;">
-                <div class="stat-number">2</div>
-                <div class="stat-label">System Alerts</div>
-            </div>
-        </div>
+    <input type="radio" name="admin-nav" id="nav-dashboard" checked hidden>
+    <input type="radio" name="admin-nav" id="nav-users" hidden>
+    <input type="radio" name="admin-nav" id="nav-attendance" hidden>
+    <input type="radio" name="admin-nav" id="nav-schedule" hidden>
+    <input type="radio" name="admin-nav" id="nav-logs" hidden>
+    <input type="radio" name="admin-nav" id="nav-profile" hidden>
 
-        <div class="main-content">
-            <div class="attendance-table">
-                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="table-title">👤 User & Tag Management</span>
-                    <button class="filter-btn" style="margin: 0; padding: 10px 20px; font-size: 0.8em;">+ Add New User</button>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="wmsu-logo">
+                    <img src="C:/Users/RRRV/Downloads/Slide47.JPG" alt="WMSU Crest" 
+                         style="width: 32px; height: 32px; object-fit: contain;"
+                         onerror="this.style.display='none'; this.parentElement.innerText='W'">
                 </div>
-                <table id="userTable">
-                    <thead>
-                        <tr>
-                            <th>User Role</th>
-                            <th>Name</th>
-                            <th>RFID UID</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="status late">Teacher</span></td>
-                            <td>Marjorie Rojas</td>
-                            <td><code>8E:45:C2:A1</code></td>
-                            <td>Active</td>
-                            <td>
-                                <button class="action-btn edit-btn">✏️</button>
-                                <button class="action-btn delete-btn" onclick="deleteRow(this)">🗑️</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><span class="status present">Student</span></td>
-                            <td>Nadzmi Gapur Abah</td>
-                            <td><code>A4:22:90:F3</code></td>
-                            <td>Active</td>
-                            <td>
-                                <button class="action-btn edit-btn">✏️</button>
-                                <button class="action-btn delete-btn" onclick="deleteRow(this)">🗑️</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div style="flex-grow: 1;">
+                    <h3 style="color: white; margin-left: 10px;">WMSU RFID</h3>
+                    <p style="color: #a2a2c2; font-size: 0.8rem; margin-left: 10px;">Infrastructure Admin</p>
+                </div>
+                <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
             </div>
 
-            <div class="summary-card">
-                <h3>🖥️ RFID Node Status</h3>
-                <div class="summary-item">
-                    <span class="summary-label">CCS Building Node</span>
-                    <span class="summary-value" style="color: #38a169;">Online</span>
+            <nav class="nav-links">
+                <label for="nav-dashboard" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></span> 
+                    <span class="nav-text">Infrastructure Overview</span>
+                </label>
+                <label for="nav-users" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> 
+                    <span class="nav-text">User Management</span>
+                </label>
+                <label for="nav-attendance" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span> 
+                    <span class="nav-text">Attendance Monitoring</span>
+                </label>
+                <label for="nav-schedule" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+                    <span class="nav-text">Schedule Manager</span>
+                </label>
+                <label for="nav-logs" class="nav-item">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></span> 
+                    <span class="nav-text">Security Logs</span>
+                </label>
+                <a href="#" onclick="openLogoutModal(event)" class="nav-item logout" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> 
+                    <span class="nav-text">Log Out</span>
+                </a>
+            </nav>
+
+            <label for="nav-profile" class="user-profile" style="cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                <div class="avatar">ADM</div>
+                <div class="user-details">
+                    <strong style="color: white;">Super Admin</strong>
+                    <span style="color: #48bb78; font-size: 0.75rem;">System Online</span>
                 </div>
-                <div class="summary-item">
-                    <span class="summary-label">Classroom Scanner</span>
-                    <span class="summary-value" style="color: #38a169;">Online</span>
+            </label>
+        </aside>
+
+        <main class="content" style="flex: 1; background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%); overflow-y: auto; padding: 2.5rem; perspective: 1500px;">
+            
+            <section class="page dashboard-page">
+                <div class="page-header">
+                    <div>
+                        <h1 style="font-weight: 800; color: var(--wmsu-red); letter-spacing: -1px;">WMSU RFID Infrastructure</h1>
+                        <p style="color: #718096;">Global System Monitoring & Control Center</p>
+                    </div>
                 </div>
-                <div class="summary-item">
-                    <span class="summary-label">Database Sync</span>
-                    <span class="summary-value" style="color: #9e1b32;">Last: 2m ago</span>
+
+                <div class="animate-up infra-overview-grid" style="margin-bottom: 2.5rem;">
+                    <div class="infra-group" onclick="document.getElementById('nav-users').checked = true;">
+                        <div class="infra-peek">USER DOMAIN</div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">User Registry</h3>
+                        <h2 class="stat-value" id="active-users-count" style="font-size: 2.5rem; margin: 10px 0;">0</h2>
+                        <div id="active-users-sub" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">0 Students | 0 Faculty</div>
+                        <span class="stat-sub" style="color: #38a169; font-weight: bold; font-size: 0.7rem; display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 10px; height: 10px; background: #38a169; border-radius: 50%; display: inline-block; animation: pulse-glow 2s infinite; margin-right: 5px;"></span>
+                            Registry Synchronized
+                        </span>
+                    </div>
+
+                    <div class="infra-group" onclick="openInfraModal('hardware')">
+                        <div class="infra-peek">HARDWARE NODES</div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Hardware Nodes</h3>
+                        <h2 class="stat-value" id="active-terminals-val" style="font-size: 2.5rem; margin: 10px 0; color: var(--wmsu-red);">0 / 0</h2>
+                        <span class="stat-sub" style="color: var(--wmsu-red); font-weight: bold; font-size: 0.7rem;">Nodes Pulse Check</span>
+                    </div>
+
+                    <div class="infra-group" onclick="openInfraModal('network')">
+                        <div class="infra-peek">SERVER HEALTH</div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Today's Attendance</h3>
+                        <h2 class="stat-value" id="today-attendance-stat" style="font-size: 2.5rem; margin: 10px 0; color: #4299e1;">0</h2>
+                        <span class="stat-sub" style="color: #4299e1; font-weight: bold; font-size: 0.7rem;">Scanned Records Today</span>
+                    </div>
+
+                    <div class="infra-group" style="grid-column: span 3; display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem;">
+                        <div>
+                            <h3 style="color: var(--text-main); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Notification Dispatch Log</h3>
+                            <p style="font-size: 0.7rem; color: var(--text-muted);">Automatic parent notifications sent today</p>
+                        </div>
+                        <h2 style="font-size: 2.2rem; color: var(--success); margin: 0;">128 <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;">Alerts Sent</span></h2>
+                    </div>
                 </div>
-                
-                <div style="margin-top: 20px;">
-                    <button class="filter-btn">🛠️ System Hardware Diagnostics</button>
-                    <button class="filter-btn" style="background: #4a5568; margin-top: 10px;">📄 Download System Logs</button>
+
+                <div class="infra-section-header">System Health Distribution</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="animate-up delay-1">
+                    <div class="card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); text-align: center;">
+                        <h3 style="font-size: 0.9rem; margin-bottom: 10px;">Registry Status</h3>
+                        <div class="pie-graph" style="--present: 95%; --late: 3%; --absent: 2%; width: 150px; height: 150px; margin: 0 auto;"></div>
+                    </div>
+                    <div class="card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow);">
+                         <h3 style="font-size: 0.9rem;">Peak Traffic Hours</h3>
+                         <div class="bar-graph" style="height: 150px; padding: 1rem 0;">
+                             <div class="bar-item" style="--h: 40%" data-name="7AM"><span>120</span></div>
+                             <div class="bar-item" style="--h: 90%" data-name="8AM"><span>450</span></div>
+                             <div class="bar-item" style="--h: 60%" data-name="9AM"><span>280</span></div>
+                             <div class="bar-item" style="--h: 30%" data-name="10AM"><span>110</span></div>
+                             <div class="bar-item" style="--h: 20%" data-name="11AM"><span>65</span></div>
+                         </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </section>
+
+            <section class="page attendance-page">
+                <div class="page-header">
+                    <div>
+                        <h1>Attendance Monitoring</h1>
+                        <p style="color: #718096;">Real-time logs for student entry and exit</p>
+                    </div>
+                    <div class="action-btns">
+                        <input type="date" id="attendanceDateFilter" class="btn btn-secondary" onchange="renderAttendanceTable()">
+                        <button class="btn btn-primary" onclick="exportAttendanceCSV()">Download Report</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Student Name</th>
+                                <th>ID Number</th>
+                                <th>Subject/Context</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page users-page">
+                <div class="page-header">
+                    <div>
+                        <h1>User & Tag Registry</h1>
+                        <p style="color: #718096;">Manage credentials and RFID associations</p>
+                    </div>
+                    <div class="action-btns">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                            <div class="search-box" style="padding-left: 15px;">
+                                <input type="text" id="userSearch" placeholder="Search by name or UID..." onkeyup="filterUsers()">
+                            </div>
+                            <div id="searchHistoryContainer" style="display: flex; gap: 5px; margin-top: 5px; font-size: 0.7rem; flex-wrap: wrap; max-width: 300px;"></div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="restoreSystemData()" title="Restore default users and logs">Restore Records</button>
+                        <button class="btn btn-secondary" onclick="exportScheduleCSV()" title="Download schedule as CSV">Export Schedule</button>
+                        <button class="btn btn-secondary" style="border: 1px solid var(--wmsu-red); color: var(--wmsu-red);" onclick="openBulkModal()">Bulk Register</button>
+                        <button class="btn btn-emphasized" onclick="openModal()">+ Add New User</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Number</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Gender</th>
+                                <th>Year/Sec</th>
+                                <th>School Year</th>
+                                <th>Enrollment Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUserTable">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page schedule-page">
+                <div class="page-header">
+                    <div>
+                        <h1>Schedule Manager</h1>
+                        <p style="color: #718096;">Manage class schedules linked to the RFID attendance scanner</p>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn btn-secondary" onclick="exportScheduleCSV()">Export CSV</button>
+                        <button class="btn btn-emphasized" onclick="openScheduleModal()">+ Add Schedule</button>
+                    </div>
+                </div>
+                <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:var(--card-shadow);">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject / Code</th>
+                                <th>Section</th>
+                                <th>Days</th>
+                                <th>Time / Late Threshold</th>
+                                <th>Room</th>
+                                <th>Instructor</th>
+                                <th>Semester</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page logs-page">
+                <div class="page-header">
+                    <div>
+                        <h1>System Audit Logs</h1>
+                        <p style="color: #718096;">Raw activity feed from the authentication server</p>
+                    </div>
+                    <div class="action-btns">
+                        <div class="search-box" style="padding-left: 15px; width: 250px;">
+                            <input type="text" id="logSearch" placeholder="Search logs by keyword..." onkeyup="renderLogs()">
+                        </div>
+                        <button class="log-filter-btn active" onclick="filterLogs('All', this)">All</button>
+                        <button class="log-filter-btn" onclick="filterLogs('ERROR', this)">Errors</button>
+                        <button class="log-filter-btn" onclick="filterLogs('WARN', this)">Warnings</button>
+                        <button class="btn btn-secondary" onclick="exportLogsCSV()">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="log-list" id="system-log-container"></div>
+            </section>
+
+            <section class="page profile-page">
+                <div class="page-header">
+                    <div>
+                        <h1>Admin Profile</h1>
+                        <p style="color: #718096;">Manage your administrative account settings</p>
+                    </div>
+                </div>
+
+                <div class="animate-up" style="max-width: 800px;">
+                    <div class="card" style="background: white; padding: 2.5rem; border-radius: 16px; box-shadow: var(--card-shadow); display: flex; gap: 30px; align-items: center;">
+                        <div style="width: 120px; height: 120px; background: var(--wmsu-red); color: white; border-radius: 50%; display: grid; place-items: center; font-size: 3rem; font-weight: 800; box-shadow: 0 10px 20px rgba(158, 27, 50, 0.2);">A</div>
+                        <div>
+                            <h2 style="margin-bottom: 5px;">Super Administrator</h2>
+                            <p style="color: var(--text-muted); margin-bottom: 15px;">System & Network Overseer</p>
+                            <span class="badge present">Master Level Access</span>
+                        </div>
+                    </div>
+
+                    <div class="infra-section-header">Account Details</div>
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-top: 0;">
+                        <div class="stat-card">
+                            <span class="stat-label">Username</span>
+                            <h3 style="margin-top: 10px;">admin_wmsu</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Email Address</span>
+                            <h3 style="margin-top: 10px;">admin@wmsu.edu.ph</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Last Login</span>
+                            <h3 style="margin-top: 10px;">Today, 08:45 AM</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Node Access</span>
+                            <h3 style="margin-top: 10px;">Global (All Clusters)</h3>
+                        </div>
+                    </div>
+
+                    <div class="infra-section-header">Preferences</div>
+                    <div class="card" style="background: white; padding: 1.5rem; border-radius: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <p style="font-weight: 700;">System Notifications</p>
+                                <small style="color: var(--text-muted);">Receive alerts on hardware failure</small>
+                            </div>
+                            <input type="checkbox" checked>
+                        </div>
+                        <button class="btn btn-secondary" onclick="alert('Password reset link sent to registered email.')">Change Security Password</button>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
     <div id="userModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Register New User</h3>
-                <span class="close-btn" onclick="closeModal()">&times;</span>
+        <form id="addUserForm" class="modal-content">
+            <div style="padding: 2rem 2.5rem 1.5rem 2.5rem; background: white; z-index: 10; border-bottom: 3px solid #e2e8f0; box-shadow: 0 4px 6px -4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2 style="margin-bottom: 0.5rem; color: var(--wmsu-red); font-size: 1.8rem; font-weight: 800;">Register New User</h2>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Initialize a comprehensive university profile and RFID link.</p>
+                    </div>
+                    <button onclick="closeModal()" style="background:none; border:none; font-size:2rem; color:var(--text-muted); cursor:pointer; line-height: 1;">&times;</button>
+                </div>
+                <div class="reg-toggle" style="margin-bottom: 0;">
+                    <button type="button" class="reg-btn active" id="btn-reg-student" onclick="switchRegType('Student')">Student</button>
+                    <button type="button" class="reg-btn" id="btn-reg-faculty" onclick="switchRegType('Faculty')">Faculty / Staff</button>
+                </div>
             </div>
-            <form id="addUserForm">
-                <div class="form-group">
-                    <label>User Role</label>
-                    <select id="role" required>
-                        <option value="Student">Student</option>
-                        <option value="Teacher">Teacher</option>
-                    </select>
+            
+            <div class="modal-scroll-area">
+                <div class="form-section">
+                    <div class="section-tag">1. Personal Identity</div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1.2;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">First Name</label>
+                            <input type="text" id="firstName" placeholder="Given Name" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                        <div style="flex: 0.8;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Middle Name</label>
+                            <input type="text" id="middleName" placeholder="M.I." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                        <div style="flex: 1.2;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Last Name</label>
+                            <input type="text" id="lastName" placeholder="Surname" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Gender</label>
+                            <select id="gender" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Date of Birth</label>
+                            <input type="date" id="dob" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="fullName" placeholder="e.g. Name of the Student/Teacher" required>
+
+                <div class="form-section">
+                    <div class="section-tag">2. Academic Context</div>
+                    <div id="student-only-fields" style="margin-bottom: 15px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Year Level</label>
+                                <input type="text" id="yearLevel" placeholder="e.g. 1st Year" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Section</label>
+                                <input type="text" id="section" placeholder="e.g. 1B" onkeyup="updateSubjectPreview()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Semester</label>
+                                <select id="semester" onchange="updateSubjectPreview()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                                    <option value="1st Semester">1st Semester</option>
+                                    <option value="2nd Semester">2nd Semester</option>
+                                    <option value="Summer">Summer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <div style="flex: 1; background: rgba(158, 27, 50, 0.05); padding: 12px; border-radius: 10px; border: 1px solid rgba(158, 27, 50, 0.1);">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 800; color: var(--wmsu-red); letter-spacing: 1px;">SCHOOL YEAR</label>
+                                <input type="text" id="academicYear" placeholder="2024-2025" onkeyup="updateSubjectPreview()" style="width:100%; padding:10px; border:1px solid var(--wmsu-red); border-radius:5px; font-weight: 800; color: var(--wmsu-red); text-align: center;">
+                            </div>
+                            <div style="flex: 1.5;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Curriculum</label>
+                                <select id="curriculum" onchange="updateSubjectPreview()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-weight: 600;">
+                                    <option value="CS">BS Computer Science</option>
+                                    <option value="ACT-AD">ACT - Application Development</option>
+                                    <option value="ACT-NT">ACT - Networking</option>
+                                    <option value="IT">BS Information Technology</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
+                            * Subjects automatically adjust based on Curriculum.
+                        </div>
+                        <div id="subject-preview-container" style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 800; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Included Program Subjects</label>
+                            <div id="subject-list-preview" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                        </div>
+                    </div>
+                    <div id="faculty-only-fields" style="margin-bottom: 15px; display: none;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Department / Office</label>
+                        <input type="text" id="department" placeholder="e.g. CCS / Registrar" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>RFID UID</label>
-                    <input type="text" id="rfid" placeholder="e.g. A1:B2:C3:D4" required>
+
+                <div class="form-section">
+                    <div class="section-tag">3. Communication & Safety</div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Mobile Number</label>
+                            <input type="tel" id="mobile" placeholder="09XXXXXXXXX" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Email Address</label>
+                            <input type="email" id="email" placeholder="name@example.com" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Emergency Contact Name</label>
+                            <input type="text" id="emergencyName" placeholder="Guardian Full Name" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Emergency Mobile</label>
+                            <input type="tel" id="emergencyNo" placeholder="09XXXXXXXXX" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Residential Address</label>
+                        <textarea id="address" placeholder="House No., Street, Barangay, City" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; height: 60px; resize: none;"></textarea>
+                    </div>
                 </div>
-                <button type="submit" class="filter-btn">Save User</button>
-            </form>
+
+                <div class="form-section">
+                    <div class="section-tag">4. RFID Assignment</div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">RFID UID Assignment</label>
+                    <input type="text" id="rfid" placeholder="YYYY-XXXXX" pattern="[0-9]{4}-[0-9]{5}" title="Format: 2024-12345" required style="width:100%; padding:15px; border:2px solid var(--wmsu-red); border-radius:8px; font-family: monospace; letter-spacing: 2px; font-size: 1.2rem; text-align: center;">
+                </div>
+                </div>
+            </div>
+
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex: 1.5;">Confirm & Save User</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="bulkUserModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div style="padding: 2rem 2.5rem 1.5rem 2.5rem; background: white; border-bottom: 3px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2 style="color: var(--wmsu-red); font-size: 1.8rem; font-weight: 800;">Bulk Student Enrollment</h2>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Upload a CSV list to register multiple students to a specific program block.</p>
+                    </div>
+                    <button onclick="closeBulkModal()" style="background:none; border:none; font-size:2rem; color:var(--text-muted); cursor:pointer;">&times;</button>
+                </div>
+            </div>
+            
+            <div class="modal-scroll-area">
+                <div class="form-section">
+                    <div class="section-tag">1. Batch Metadata</div>
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Target Curriculum</label>
+                            <select id="bulkCurriculum" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                                <option value="ACT-AD">ACT - Application Development</option>
+                                <option value="ACT-NT">ACT - Networking</option>
+                                <option value="CS">BS Computer Science</option>
+                                <option value="IT">BS Information Technology</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Section</label>
+                            <input type="text" id="bulkSection" placeholder="e.g. 1B" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Semester</label>
+                            <select id="bulkSemester" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                                <option value="1st Semester">1st Semester</option>
+                                <option value="2nd Semester">2nd Semester</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">School Year</label>
+                            <input type="text" id="bulkAY" value="2024-2025" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-tag">2. Select Student List File</div>
+                    <div style="background: #f8fafc; border: 2px dashed #cbd5e1; padding: 30px; border-radius: 12px; text-align: center;">
+                        <input type="file" id="bulkCsvFile" accept=".csv" style="margin-bottom: 10px;">
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">Format: ID, LastName, FirstName, MiddleName, Gender, DOB, Email, Mobile</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBulkModal()" style="flex: 1;">Cancel</button>
+                <button class="btn btn-primary" onclick="processBulkUpload()" style="flex: 2;">Enroll Student List</button>
+            </div>
         </div>
     </div>
 
+    
+    <div id="infraUserModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: var(--wmsu-red);">User Infrastructure Details</h2>
+                <button onclick="closeInfraModal('user')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-detail-box">
+                <p id="active-users-sub-modal" style="font-weight: bold; margin-bottom: 15px;">Loading metrics...</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="card" style="padding: 10px; text-align: center; background: white;">
+                        <small style="color: var(--text-muted);">STUDENT SYNC</small>
+                        <p style="color: #38a169; font-weight: 800;">STABLE</p>
+                    </div>
+                    <div class="card" style="padding: 10px; text-align: center; background: white;">
+                        <small style="color: var(--text-muted);">FACULTY SYNC</small>
+                        <p style="color: #38a169; font-weight: 800;">STABLE</p>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="closeInfraModal('user')">Close Details</button>
+        </div>
+    </div>
+
+    <div id="infraHardwareModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: var(--wmsu-red);">Hardware Network Node Status</h2>
+                <button onclick="closeInfraModal('hardware')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="device-grid" id="device-grid-container-modal" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="closeInfraModal('hardware')">Close Network View</button>
+        </div>
+    </div>
+
+    <div id="infraNetworkModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: var(--wmsu-red);">Network & Server Health</h2>
+                <button onclick="closeInfraModal('network')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-detail-box">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <span class="stat-label">LATENCY</span>
+                        <h3 style="color: #4299e1;">12ms</h3>
+                    </div>
+                    <div>
+                        <span class="stat-label">QUERIES / SEC</span>
+                        <h3 style="color: #4299e1;">42 Q/s</h3>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="closeInfraModal('network')">Close Network Analytics</button>
+        </div>
+    </div>
+
+    <div id="viewUserModal" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div style="padding: 2rem 2.5rem 1.5rem 2.5rem; background: white; z-index: 10; border-bottom: 3px solid #e2e8f0; box-shadow: 0 4px 6px -4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: var(--wmsu-red); font-size: 1.8rem; font-weight: 800;">User Profile Details</h2>
+                <button onclick="closeViewModal()" style="background:none; border:none; font-size:2rem; color:var(--text-muted); cursor:pointer; line-height: 1;">&times;</button>
+            </div>
+            <div id="userDetailsContent" class="modal-scroll-area">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" style="width: 100%;" onclick="closeViewModal()">Close Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content" style="max-width:640px;width:95%;text-align:left;padding:0;background:white;border-radius:15px;">
+            <div style="padding:1.5rem 2rem;border-bottom:3px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;border-radius:15px 15px 0 0;">
+                <div>
+                    <h2 id="schedModalTitle" style="color:var(--wmsu-red);font-size:1.6rem;font-weight:800;margin:0;">Add New Schedule</h2>
+                    <p style="color:#718096;font-size:0.85rem;margin-top:4px;">Define class times linked to the RFID scanner</p>
+                </div>
+                <button onclick="closeScheduleModal()" style="background:none;border:none;font-size:2rem;color:#718096;cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:1.5rem 2rem;overflow-y:auto;max-height:58vh;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Subject Name *</label>
+                        <select id="sched-subject" onchange="handleSubjectSelect(this.value)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Subject Code</label>
+                        <input type="text" id="sched-code" placeholder="e.g. HCI-102" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Instructor</label>
+                        <input type="text" id="sched-instructor" placeholder="e.g. MARJORIE ROJAS" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Section * <small style="color:#718096;">(e.g. ACT AD 1B)</small></label>
+                        <input type="text" id="sched-section" placeholder="e.g. ACT AD 1B" style="width:100%;padding:10px;border:2px solid var(--wmsu-red);border-radius:6px;font-size:0.9rem;font-weight:700;color:var(--wmsu-red);">
+                    </div>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;font-size:0.85rem;">Class Days *</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Mon"> Mon</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Tue"> Tue</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Wed"> Wed</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Thu"> Thu</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Fri"> Fri</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Sat"> Sat</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;font-weight:600;user-select:none;"><input type="checkbox" class="sched-day-cb" value="Sun"> Sun</label>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Start Time *</label>
+                        <input type="time" id="sched-start" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">End Time *</label>
+                        <input type="time" id="sched-end" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Room</label>
+                        <input type="text" id="sched-room" placeholder="e.g. LR2" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Late Threshold (minutes)</label>
+                        <input type="number" id="sched-late" value="15" min="0" max="60" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600;font-size:0.85rem;">Semester</label>
+                        <select id="sched-semester" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem;">
+                            <option value="1st Semester">1st Semester</option>
+                            <option value="2nd Semester">2nd Semester</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:1.5rem 2rem;border-top:1px solid #e2e8f0;display:flex;gap:15px;background:#f8fafc;border-radius:0 0 15px 15px;">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()" style="flex:1;">Cancel</button>
+                <button class="btn btn-primary" onclick="handleSaveSchedule()" style="flex:1.5;">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1rem; color: var(--wmsu-red);">Confirm Logout</h2>
+            <p style="margin-bottom: 2rem; color: #718096;">Are you sure you want to exit the administration system?</p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeLogoutModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" style="flex: 1;" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-toast" class="admin-toast">
+        <div style="background: var(--wmsu-red); width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 10px var(--wmsu-red);"></div>
+        <div id="admin-toast-content" style="font-size: 0.9rem; line-height: 1.4;"></div>
+    </div>
+
     <script>
-        const modal = document.getElementById("userModal");
-        const form = document.getElementById("addUserForm");
-        const addBtn = document.querySelector(".filter-btn");
+        </script>
+    <script src="RFID_Admin.js"></script>
+    <script>
+        window.onload = () => {
+            initSystem();
+            applySidebarState();
+        };
+        window.onclick = function(event) {
+            const userModal = document.getElementById("userModal");
+            const bulkUserModal = document.getElementById("bulkUserModal");
+            const viewUserModal = document.getElementById("viewUserModal");
+            const logoutModal = document.getElementById("logoutModal");
+            const infraUserModal = document.getElementById("infraUserModal");
+            const infraHardwareModal = document.getElementById("infraHardwareModal");
+            const infraNetworkModal = document.getElementById("infraNetworkModal");
 
-        addBtn.onclick = function() {
-            modal.style.display = "flex";
+            if (event.target === userModal) closeModal(); 
+            if (event.target === bulkUserModal) closeBulkModal();
+            if (event.target === viewUserModal) closeViewModal();
+            if (event.target === logoutModal) closeLogoutModal();
+            if (event.target === infraUserModal) closeInfraModal('user');
+            if (event.target === infraHardwareModal) closeInfraModal('hardware');
+            if (event.target === infraNetworkModal) closeInfraModal('network');
+            const scheduleModal = document.getElementById("scheduleModal");
+            if (event.target === scheduleModal) closeScheduleModal();
         }
 
-        function closeModal() {
-            modal.style.display = "none";
-        }
-
-        // DELETE FUNCTION
-        function deleteRow(btn) {
-            if(confirm("Are you sure you want to delete this user?")) {
-                var row = btn.parentNode.parentNode;
-                row.parentNode.removeChild(row);
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                localStorage.setItem('adminSidebarCollapsed', sidebar.classList.contains('collapsed'));
             }
         }
 
-        form.onsubmit = function(e) {
-            e.preventDefault();
-
-            const role = document.getElementById("role").value;
-            const name = document.getElementById("fullName").value;
-            const rfid = document.getElementById("rfid").value;
-            const statusClass = role === "Student" ? "present" : "late";
-
-            const tableBody = document.querySelector("tbody");
-            const newRow = document.createElement("tr");
-
-            newRow.innerHTML = `
-                <td><span class="status ${statusClass}">${role}</span></td>
-                <td>${name}</td>
-                <td><code>${rfid}</code></td>
-                <td>Active</td>
-                <td>
-                    <button class="action-btn edit-btn">✏️</button>
-                    <button class="action-btn delete-btn" onclick="deleteRow(this)">🗑️</button>
-                </td>
-            `;
-
-            tableBody.appendChild(newRow);
-            form.reset();
-            closeModal();
+        function applySidebarState() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar && localStorage.getItem('adminSidebarCollapsed') === 'true') {
+                sidebar.classList.add('collapsed');
+            }
         }
 
-        window.onclick = function(event) {
-            if (event.target == modal) closeModal();
+        function openLogoutModal(e) { 
+            if (e) e.preventDefault(); 
+            document.getElementById('logoutModal').style.display = 'flex'; 
+        }
+        function closeLogoutModal() { 
+            document.getElementById('logoutModal').style.display = 'none'; 
+        }
+        function confirmLogout() { 
+            window.location.href = 'Landing_page.html'; 
+        }
+
+        function showUserDetails(id) {
+            const u = users.find(user => user.id === id);
+            if (!u) return;
+            
+            const content = document.getElementById("userDetailsContent");
+            const fullName = u.name || `${u.lastName}, ${u.firstName} ${u.middleName || ''}`;
+            const initial = u.firstName ? u.firstName.charAt(0) : (u.name ? u.name.charAt(0) : (u.id ? u.id.charAt(0) : '?'));
+            const isFaculty = u.role === 'Faculty' || u.role === 'Teacher';
+            
+            const schedule = JSON.parse(localStorage.getItem('wmsu_schedule')) || [];
+            const studentSection = (u.section || '').toUpperCase();
+            const studCurr = (u.curriculum || '').toUpperCase();
+            const manualCodes = u.manualCourses || [];
+            
+            const myCourses = isFaculty ? [] : schedule.filter(s => {
+                if (s.semester && s.semester !== (u.semester || "1st Semester")) return false;
+                const schedSecFull = (s.section || '').toUpperCase();
+                const studCurr = (u.curriculum || '').toUpperCase();
+                
+                const studIdent = (u.section || '').toUpperCase().split(' ').pop() || (u.section || '').toUpperCase();
+                const schedIdent = schedSecFull.split(' ').pop();
+                const isSectionMatch = (schedSecFull === (u.section || '').toUpperCase()) || (schedIdent === studIdent) || (schedIdent.endsWith(studIdent)) || (studIdent.endsWith(schedIdent));
+
+                const isACT = studCurr.includes('ACT') || studCurr.includes('TECHNOLOGY') || studCurr.includes('DEVELOPMENT') || studCurr.includes('ASSOCIATE');
+                const isCS = studCurr.includes('CS') || studCurr.includes('COMPUTER SCIENCE');
+                const isIT = studCurr.includes('IT') || studCurr.includes('INFORMATION TECHNOLOGY');
+
+                const progMatch = (isACT && schedSecFull.includes('ACT')) || (isCS && schedSecFull.includes('CS')) || (isIT && schedSecFull.includes('IT'));
+                
+                return (isSectionMatch && (progMatch || schedSecFull.length <= 5 || schedSecFull.split(' ').length === 1)) || manualCodes.includes(s.code);
+            });
+
+            const uniqueCourses = [];
+            const courseMap = new Map();
+            myCourses.forEach(c => {
+                if(!courseMap.has(c.code)) { courseMap.set(c.code, true); uniqueCourses.push(c); }
+            });
+
+            const coursesHTML = (u.role === 'Faculty' || u.role === 'Teacher') ? '' : `
+                <div style="background: #f0fdf4; border-radius: 12px; padding: 15px; border: 1px solid #dcfce7; margin-top: 15px;">
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        Linked Courses <div style="flex: 1; height: 1px; background: #dcfce7;"></div>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${uniqueCourses.map(c => `<span style="background: white; border: 1px solid #bbf7d0; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; color: #166534;">${c.subject}</span>`).join('') || '<p style="font-size:0.75rem; color:var(--text-muted);">No linked courses found.</p>'}
+                    </div>
+                </div>`;
+
+            content.innerHTML = `
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <div style="width: 80px; height: 80px; background: var(--wmsu-red); color: white; border-radius: 50%; display: grid; place-items: center; font-size: 2rem; font-weight: 800; margin: 0 auto; box-shadow: 0 4px 10px rgba(158, 27, 50, 0.2);">${initial}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #edf2f7; padding-top: 20px;">
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">FULL NAME</label><div style="font-weight: 700; color: var(--text-main);">${fullName}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">USER ROLE</label><div style="font-weight: 700; color: var(--text-main);">${u.role || 'Student'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">ID NUMBER</label><div style="font-weight: 700; color: var(--text-main);"><code>${u.id}</code></div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">DATE OF BIRTH</label><div style="font-weight: 700; color: var(--text-main);">${u.dob || 'N/A'}</div></div>
+                    <div><label style="color: var(--wmsu-red); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">ACADEMIC PERIOD</label><div style="font-weight: 800; color: var(--wmsu-red);">${u.semester || 'N/A'} <span style="background: var(--wmsu-red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${u.academicYear || 'N/A'}</span></div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">CURRICULUM</label><div style="font-weight: 700; color: var(--text-main);">${u.curriculum || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">EMAIL</label><div style="font-weight: 700; color: var(--text-main);">${u.email || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">MOBILE</label><div style="font-weight: 700; color: var(--text-main);">${u.mobile || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">GENDER</label><div style="font-weight: 700; color: var(--text-main);">${u.gender || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">YEAR & SECTION</label><div style="font-weight: 700; color: var(--text-main);">${u.year || 'N/A'}-${u.section || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">EMERGENCY CONTACT</label><div style="font-weight: 700; color: var(--text-main);">${u.emergencyName || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">EMERGENCY PHONE</label><div style="font-weight: 700; color: var(--text-main);">${u.emergencyNo || 'N/A'}</div></div>
+                    <div style="grid-column: span 2;"><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">ADDRESS</label><div style="font-weight: 700; color: var(--text-main);">${u.address || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">REGISTRY DATE</label><div style="font-weight: 700; color: var(--text-main);">${u.enrollDate || 'N/A'}</div></div>
+                    <div><label style="color: var(--text-muted); font-size: 0.7rem; font-weight: 800; display: block; margin-bottom: 2px;">SYSTEM STATUS</label><div style="font-weight: 700; color: #38a169;">${u.status || 'Active'}</div></div>
+                </div>
+
+                ${coursesHTML}
+
+                <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-top: 15px;">
+                    <div style="font-size: 0.7rem; font-weight: 800; color: var(--wmsu-red); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                        Academic History <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    </div>
+                    ${(u.history || []).map(h => `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #edf2f7;"><span style="font-weight:600; font-size: 0.85rem;">${h.year} - ${h.semester}</span><span style="color:var(--wmsu-red); font-weight:800; font-size: 0.85rem;">${h.rate}% Rate</span></div>`).join('') || '<p style="font-size:0.8rem; color:var(--text-muted);">No historical records found for this student.</p>'}
+                </div>
+            `;
+            document.getElementById("viewUserModal").style.display = "flex";
+        }
+
+        function closeViewModal() {
+            document.getElementById("viewUserModal").style.display = "none";
         }
     </script>
 </body>
