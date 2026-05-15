@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMSU | System Login</title>
+    <link rel="stylesheet" href="onyx.css">
+    <link rel="stylesheet" href="Login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a !important; }
+        .login-card { 
+            background: #1e293b !important; 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <img src="C:/Users/RRRV/Downloads/Slide47.JPG" alt="WMSU Logo" class="logo">
+        <h2 style="color: var(--crimson); margin: 0 0 10px 0;">WMSU Access</h2>
+        <p style="color: var(--text-dim); margin-bottom: 30px; font-size: 0.9rem;">Enter your credentials to access your
+            dashboard.</p>
+
+        <form id="unifiedPortalLogin">
+            <div style="margin-bottom: 5px;">
+                <label>ID NUMBER / USERNAME</label>
+                <input type="text" id="loginIdentity" placeholder="e.g. 2025-02907" autofocus>
+                <p id="idError" class="error"></p>
+            </div>
+            <div style="margin-bottom: 10px; position: relative;">
+                <label>PASSWORD</label>
+                <input type="password" id="loginPassword" placeholder="Password">
+                <span id="togglePassword" class="password-toggle" style="cursor: pointer;"></span>
+                <p id="passwordError" class="error"></p>
+            </div>
+            <button type="submit" class="cta-btn">Sign In</button>
+        </form>
+        <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot Password?</a>
+    </div>
+
+    <script src="Login.js"></script>
+</body>
+
+</html>
